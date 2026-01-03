@@ -1,7 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
-import errormiddleware from './middlewares/error.middleware.js';
+import errorMiddleware from './middlewares/error.middleware.js';
 
 const app = express();
 
@@ -28,6 +28,6 @@ app.use('/api/v1/users', userRoutes);
 
 
 // Error middleware must be LAST
-app.use(errormiddleware);
+app.use(errorMiddleware);
 
 export default app;
