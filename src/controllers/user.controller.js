@@ -6,6 +6,7 @@ import apiResponse from '../utils/apiResponse.js';
 
 const registerUser = asyncHandler(async (req, res) => {
   const { fullName, username, email, password } = req.body;
+  console.log(req.body);
 
   if (!fullName || !username || !email || !password) {
     throw new apiError(400, 'All fields are required');
@@ -19,6 +20,7 @@ const registerUser = asyncHandler(async (req, res) => {
 
   const avatarPath = req.files?.avatar?.[0]?.path ?? null;
   const coverPath = req.files?.coverImage?.[0]?.path ?? null;
+  console.log(req.files);
 
   if (!avatarPath) {
     throw new apiError(400, 'Avatar image is required');
