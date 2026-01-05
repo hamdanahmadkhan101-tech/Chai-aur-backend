@@ -1,7 +1,10 @@
 import asyncHandler from '../utils/asyncHandler.js';
 import apiError from '../utils/apiError.js';
 import { User } from '../models/user.model.js';
-import { uploadOnCloudinary, deleteFromCloudinary } from '../utils/cloudinary.js';
+import {
+  uploadOnCloudinary,
+  deleteFromCloudinary,
+} from '../utils/cloudinary.js';
 import apiResponse from '../utils/apiResponse.js';
 import jwt from 'jsonwebtoken';
 
@@ -225,7 +228,7 @@ const getCurrentUserProfile = asyncHandler(async (req, res) => {
 
 const updateUserProfile = asyncHandler(async (req, res) => {
   const { fullName, email, username } = req.body;
-  
+
   // If username is being changed, check if new username is taken
   if (username && username !== req.user.username) {
     const existingUser = await User.findOne({ username });
@@ -233,7 +236,7 @@ const updateUserProfile = asyncHandler(async (req, res) => {
       throw new apiError(409, 'Username is already taken');
     }
   }
-  
+
   // If email is being changed, check if new email is taken
   if (email && email !== req.user.email) {
     const existingUser = await User.findOne({ email });
@@ -241,23 +244,23 @@ const updateUserProfile = asyncHandler(async (req, res) => {
       throw new apiError(409, 'Email is already taken');
     }
   }
-  
+
   // Update fields
   const updatedUser = await User.findByIdAndUpdate(
     req.user._id,
-    { 
+    {
       $set: {
         ...(fullName && { fullName }),
         ...(email && { email }),
-        ...(username && { username: username.toLowerCase() })
-      }
+        ...(username && { username: username.toLowerCase() }),
+      },
     },
     { new: true, runValidators: true }
   ).select('-password -refreshTokens');
-  
-  res.status(200).json(
-    new apiResponse(200, 'Profile updated successfully', updatedUser)
-  );
+
+  res
+    .status(200)
+    .json(new apiResponse(200, 'Profile updated successfully', updatedUser));
 });
 
 const updateUserAvatar = asyncHandler(async (req, res) => {
@@ -327,7 +330,7 @@ export {
   refreshAccessToken,
   changeCurrentUserPassword,
   getCurrentUserProfile,
-  updateAccountDetails,
+  updateUserProfile,
   updateUserAvatar,
   updateUserCoverImage,
 };
