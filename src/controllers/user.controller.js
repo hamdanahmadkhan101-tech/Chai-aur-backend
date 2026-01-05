@@ -223,40 +223,41 @@ const getCurrentUserProfile = asyncHandler(async (req, res) => {
     .json(new apiResponse(200, 'User profile fetched successfully', user));
 });
 
-const updateAccountDetails = asyncHandler(async (req, res) => {
-  const { fullName, email } = req.body;
-
-  if (!fullName && !email) {
-    throw new apiError(
-      400,
-      'At least one field (fullName or email) is required'
-    );
+const updateUserProfile = asyncHandler(async (req, res) => {
+  const { fullName, email, username } = req.body;
+  
+  // If username is being changed, check if new username is taken
+  if (username && username !== req.user.username) {
+    const existingUser = await User.findOne({ username });
+    if (existingUser) {
+      throw new apiError(409, 'Username is already taken');
+    }
   }
-
-  // Check if email is being updated and if it's already taken
-  if (email) {
-    const existingUser = await User.findOne({
-      email,
-      _id: { $ne: req.user._id },
-    });
+  
+  // If email is being changed, check if new email is taken
+  if (email && email !== req.user.email) {
+    const existingUser = await User.findOne({ email });
     if (existingUser) {
       throw new apiError(409, 'Email is already taken');
     }
   }
-
-  const updateFields = {};
-  if (fullName) updateFields.fullName = fullName;
-  if (email) updateFields.email = email;
-
-  const user = await User.findByIdAndUpdate(
+  
+  // Update fields
+  const updatedUser = await User.findByIdAndUpdate(
     req.user._id,
-    { $set: updateFields },
-    { new: true }
+    { 
+      $set: {
+        ...(fullName && { fullName }),
+        ...(email && { email }),
+        ...(username && { username: username.toLowerCase() })
+      }
+    },
+    { new: true, runValidators: true }
   ).select('-password -refreshTokens');
-
-  res
-    .status(200)
-    .json(new apiResponse(200, 'Account details updated successfully', user));
+  
+  res.status(200).json(
+    new apiResponse(200, 'Profile updated successfully', updatedUser)
+  );
 });
 
 const updateUserAvatar = asyncHandler(async (req, res) => {
@@ -288,7 +289,6 @@ const updateUserAvatar = asyncHandler(async (req, res) => {
     .status(200)
     .json(new apiResponse(200, 'Avatar updated successfully', user));
 });
-
 
 const updateUserCoverImage = asyncHandler(async (req, res) => {
   const coverPath = req.file?.path;
