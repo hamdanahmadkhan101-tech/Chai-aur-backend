@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import './index.css';
 import LoginPage from './pages/auth/LoginPage.jsx';
@@ -13,7 +13,16 @@ function App() {
   return (
     <AuthProvider>
       <BrowserRouter>
-        <Toaster position="top-right" />
+        <Toaster 
+          position="top-right" 
+          toastOptions={{
+            style: {
+              background: '#272727',
+              color: '#ffffff',
+              border: '1px solid #404040'
+            }
+          }}
+        />
         <Routes>
           <Route path="/" element={<HomePage />} />
 
@@ -26,7 +35,12 @@ function App() {
             path="/profile"
             element={
               <ProtectedRoute>
-                <div className="text-white">Profile page (coming soon)</div>
+                <div className="min-h-screen bg-background text-white flex items-center justify-center">
+                  <div className="text-center">
+                    <h1 className="text-2xl font-semibold mb-2">Profile Page</h1>
+                    <p className="text-textSecondary">Coming in Phase 2</p>
+                  </div>
+                </div>
               </ProtectedRoute>
             }
           />
