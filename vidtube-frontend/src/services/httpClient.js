@@ -37,13 +37,17 @@ httpClient.interceptors.response.use(
         // Extract and store the new access token
         const newAccessToken = response.data?.data?.accessToken;
         if (newAccessToken) {
-          Cookies.set("accessToken", newAccessToken);
+          Cookies.set("accessToken", newAccessToken, {
+            sameSite: "strict",
+            secure: window.location.protocol === "https:",
+            path: "/",
+          });
           originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
         }
 
         return httpClient(originalRequest);
       } catch (refreshError) {
-        Cookies.remove("accessToken");
+        Cookies.remove("accessToken", { path: "/" });
         window.location.href = "/login";
         return Promise.reject(refreshError);
       }

@@ -1,4 +1,10 @@
-import { createContext, useEffect, useReducer, useMemo, useCallback } from "react";
+import {
+  createContext,
+  useEffect,
+  useReducer,
+  useMemo,
+  useCallback,
+} from "react";
 import Cookies from "js-cookie";
 import {
   getCurrentUser,
@@ -67,7 +73,11 @@ export function AuthProvider({ children }) {
       const res = await apiLogin(credentials);
       const { user, accessToken } = res.data.data;
       if (accessToken) {
-        Cookies.set("accessToken", accessToken);
+        Cookies.set("accessToken", accessToken, {
+          sameSite: "strict",
+          secure: window.location.protocol === "https:",
+          path: "/",
+        });
       }
       dispatch({ type: "LOGIN_SUCCESS", payload: user });
       return user;
@@ -101,7 +111,7 @@ export function AuthProvider({ children }) {
     } catch {
       // Ignore logout errors
     } finally {
-      Cookies.remove("accessToken");
+      Cookies.remove("accessToken", { path: "/" });
       dispatch({ type: "LOGOUT" });
     }
   }, []);
