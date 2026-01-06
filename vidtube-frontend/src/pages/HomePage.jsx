@@ -1,47 +1,59 @@
-import { useEffect, useState, useCallback } from 'react';
-import { Link } from 'react-router-dom';
-import { TrendingUp } from 'lucide-react';
-import toast from 'react-hot-toast';
-import Header from '../components/layout/Header.jsx';
-import VideoGrid from '../components/video/VideoGrid.jsx';
-import Button from '../components/ui/Button.jsx';
-import { getAllVideos } from '../services/videoService.js';
-import useAuth from '../hooks/useAuth.js';
+import { useEffect, useState, useCallback } from "react";
+import { Link } from "react-router-dom";
+import { TrendingUp } from "lucide-react";
+import toast from "react-hot-toast";
+import Header from "../components/layout/Header.jsx";
+import VideoGrid from "../components/video/VideoGrid.jsx";
+import Button from "../components/ui/Button.jsx";
+import { getAllVideos } from "../services/videoService.js";
+import useAuth from "../hooks/useAuth.js";
 
 export default function HomePage() {
   const { isAuthenticated } = useAuth();
   const [videos, setVideos] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(false);
-  const [sortBy, setSortBy] = useState('createdAt');
+  const [sortBy, setSortBy] = useState("createdAt");
 
-  const fetchVideos = useCallback(async (pageNum = 1) => {
-    try {
-      if (pageNum === 1) setLoading(true);
-      const response = await getAllVideos({
-        page: pageNum,
-        limit: 20,
-        sortBy: sortBy,
-        sortType: 'desc',
-      });
-      const data = response.data.data;
+  const fetchVideos = useCallback(
+    async (pageNum = 1) => {
+      try {
+        if (pageNum === 1) {
+          setLoading(true);
+          setError(null);
+        }
+        const response = await getAllVideos({
+          page: pageNum,
+          limit: 20,
+          sortBy: sortBy,
+          sortType: "desc",
+        });
+        const data = response.data.data;
 
-      if (pageNum === 1) {
-        setVideos(data.docs || []);
-      } else {
-        setVideos((prev) => [...prev, ...(data.docs || [])]);
+        if (pageNum === 1) {
+          setVideos(data.docs || []);
+        } else {
+          setVideos((prev) => [...prev, ...(data.docs || [])]);
+        }
+
+        setHasMore(data.hasNextPage || false);
+        setPage(pageNum);
+        setError(null);
+      } catch (err) {
+        console.error("Failed to load videos:", err);
+        const errorMessage =
+          err.response?.data?.message ||
+          "Failed to load videos. Please try again.";
+        setError(errorMessage);
+        toast.error(errorMessage);
+      } finally {
+        setLoading(false);
       }
-
-      setHasMore(data.hasNextPage || false);
-      setPage(pageNum);
-    } catch (error) {
-      console.error('Failed to load videos:', error);
-      toast.error('Failed to load videos. Please try again.');
-    } finally {
-      setLoading(false);
-    }
-  }, [sortBy]);
+    },
+    [sortBy]
+  );
 
   useEffect(() => {
     fetchVideos();
@@ -69,7 +81,8 @@ export default function HomePage() {
             </div>
 
             <h2 className="mb-6 max-w-4xl text-4xl font-bold leading-tight tracking-tight sm:text-5xl lg:text-6xl">
-              Share your <span className="text-primary">videos</span> with the world
+              Share your <span className="text-primary">videos</span> with the
+              world
             </h2>
 
             <p className="mb-10 max-w-2xl text-lg text-textSecondary sm:text-xl">
@@ -93,27 +106,39 @@ export default function HomePage() {
         {/* Videos Section */}
         <div className="mb-6 flex items-center justify-between">
           <h2 className="text-2xl font-bold text-white">
-            {sortBy === 'views' ? 'Trending Videos' : 'Latest Videos'}
+            {sortBy === "views" ? "Trending Videos" : "Latest Videos"}
           </h2>
           <div className="flex gap-2">
             <Button
-              variant={sortBy === 'createdAt' ? 'primary' : 'outline'}
+              variant={sortBy === "createdAt" ? "primary" : "outline"}
               size="sm"
-              onClick={() => setSortBy('createdAt')}
+              onClick={() => setSortBy("createdAt")}
             >
               Latest
             </Button>
             <Button
-              variant={sortBy === 'views' ? 'primary' : 'outline'}
+              variant={sortBy === "views" ? "primary" : "outline"}
               size="sm"
-              onClick={() => setSortBy('views')}
+              onClick={() => setSortBy("views")}
             >
               Trending
             </Button>
           </div>
         </div>
 
-        <VideoGrid videos={videos} loading={loading} />
+        {/* Error State */}
+        {error && !loading && (
+          <div className="flex flex-col items-center justify-center py-12 text-center">
+            <div className="mb-4 rounded-lg border border-red-500/20 bg-red-500/10 px-6 py-4 max-w-md">
+              <p className="text-red-400">{error}</p>
+            </div>
+            <Button onClick={() => fetchVideos(1)} variant="primary">
+              Retry
+            </Button>
+          </div>
+        )}
+
+        {!error && <VideoGrid videos={videos} loading={loading} />}
 
         {/* Load More */}
         {hasMore && !loading && (
