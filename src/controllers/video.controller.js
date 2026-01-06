@@ -9,6 +9,8 @@ import apiResponse from '../utils/apiResponse.js';
 // Models
 import Video from '../models/video.model.js';
 import { User } from '../models/user.model.js';
+import Like from '../models/like.model.js';
+import Comment from '../models/comment.model.js';
 
 // Services
 import {
@@ -172,7 +174,7 @@ const getAllVideos = asyncHandler(async (req, res) => {
 });
 
 /**
- * Get a single video by ID with owner details
+ * Get a single video by ID with owner and engagement details
  * @route GET /api/v1/videos/:videoId
  * @access Public (published only) / Private (owner can see unpublished)
  */
@@ -192,19 +194,71 @@ const getVideoById = asyncHandler(async (req, res) => {
     throw new apiError(403, 'Video is not published');
   }
 
-  // Increment views count
-  await Video.findByIdAndUpdate(
-    videoId,
-    { $inc: { views: 1 } },
-    { new: false }
-  );
+  // Only increment views for non-owners to avoid inflating own video views
+  if (!isOwner) {
+    await Video.findByIdAndUpdate(
+      videoId,
+      { $inc: { views: 1 } },
+      { new: false }
+    );
+  }
 
-  const [detailedVideo] = await Video.aggregate([
+  const currentUserId = req.user?._id
+    ? new mongoose.Types.ObjectId(req.user._id)
+    : null;
+
+  const pipeline = [
     {
       $match: { _id: new mongoose.Types.ObjectId(videoId) },
     },
     ...ownerLookupPipeline,
-  ]);
+    {
+      $lookup: {
+        from: 'likes',
+        localField: '_id',
+        foreignField: 'video',
+        as: 'likes',
+      },
+    },
+    {
+      $lookup: {
+        from: 'comments',
+        localField: '_id',
+        foreignField: 'video',
+        as: 'comments',
+      },
+    },
+  ];
+
+  // Add engagement fields via aggregation
+  if (currentUserId) {
+    pipeline.push({
+      $addFields: {
+        likesCount: { $size: '$likes' },
+        commentsCount: { $size: '$comments' },
+        isLiked: {
+          $in: [currentUserId, '$likes.likedBy'],
+        },
+      },
+    });
+  } else {
+    pipeline.push({
+      $addFields: {
+        likesCount: { $size: '$likes' },
+        commentsCount: { $size: '$comments' },
+        isLiked: false,
+      },
+    });
+  }
+
+  pipeline.push({
+    $project: {
+      likes: 0,
+      comments: 0,
+    },
+  });
+
+  const [detailedVideo] = await Video.aggregate(pipeline);
 
   res
     .status(200)
