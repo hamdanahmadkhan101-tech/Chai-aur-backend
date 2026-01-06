@@ -11,6 +11,7 @@ import {
   updateUserCoverImage,
   getUserChannelProfile,
   toggleSubscription,
+  getUserWatchHistory,
 } from '../controllers/user.controller.js';
 import upload from '../middlewares/multer.middleware.js';
 import { verifyJWT } from '../middlewares/auth.middleware.js';
@@ -55,5 +56,8 @@ router.route('/c/:username').get(verifyJWT, getUserChannelProfile);
 
 // Subscription Management
 router.route('/toggle-subscription/:channelId').post(verifyJWT, toggleSubscription);
+
+// Watch History
+router.route('/watch-history').get(verifyJWT, getUserWatchHistory);
 
 export default router;

@@ -2,6 +2,7 @@ import asyncHandler from '../utils/asyncHandler.js';
 import apiError from '../utils/apiError.js';
 import { User } from '../models/user.model.js';
 import Subscription from '../models/subscription.model.js';
+import Video from '../models/video.model.js';
 import {
   uploadOnCloudinary,
   deleteFromCloudinary,
@@ -446,6 +447,135 @@ const toggleSubscription = asyncHandler(async (req, res) => {
   }
 });
 
+/**
+ * Retrieve user's watch history with video details and owner information
+ * Returns paginated results with comprehensive video metadata
+ * Includes owner details for each video in the watch history
+ */
+const getUserWatchHistory = asyncHandler(async (req, res) => {
+  // Get pagination parameters from query string
+  const page = parseInt(req.query.page) || 1;
+  const limit = parseInt(req.query.limit) || 10;
+  
+  // Validate pagination parameters
+  if (page < 1 || limit < 1 || limit > 50) {
+    throw new apiError(400, 'Invalid pagination parameters. Page must be >= 1, limit must be 1-50');
+  }
+  
+  // Aggregate pipeline to fetch watch history with video and owner details
+  const watchHistory = await User.aggregate([
+    {
+      // Match the current user
+      $match: {
+        _id: req.user._id
+      }
+    },
+    {
+      // Lookup videos from watchHistory array
+      $lookup: {
+        from: 'videos',
+        localField: 'watchHistory',
+        foreignField: '_id',
+        as: 'watchHistory',
+        pipeline: [
+          {
+            // Only include published videos
+            $match: {
+              isPublished: true
+            }
+          },
+          {
+            // Lookup video owner details
+            $lookup: {
+              from: 'users',
+              localField: 'owner',
+              foreignField: '_id',
+              as: 'owner',
+              pipeline: [
+                {
+                  // Select only necessary owner fields
+                  $project: {
+                    username: 1,
+                    fullName: 1,
+                    avatarUrl: 1
+                  }
+                }
+              ]
+            }
+          },
+          {
+            // Convert owner array to object
+            $addFields: {
+              owner: {
+                $first: '$owner'
+              }
+            }
+          },
+          {
+            // Select video fields to return
+            $project: {
+              title: 1,
+              description: 1,
+              url: 1,
+              thumbnailUrl: 1,
+              duration: 1,
+              views: 1,
+              createdAt: 1,
+              owner: 1
+            }
+          }
+        ]
+      }
+    },
+    {
+      // Project only the watchHistory field
+      $project: {
+        watchHistory: 1
+      }
+    }
+  ]);
+  
+  // Check if user exists and has watch history
+  if (!watchHistory.length) {
+    return res.status(200).json(
+      new apiResponse(200, 'Watch history retrieved successfully', {
+        videos: [],
+        pagination: {
+          currentPage: page,
+          totalPages: 0,
+          totalVideos: 0,
+          hasNextPage: false,
+          hasPrevPage: false
+        }
+      })
+    );
+  }
+  
+  const videos = watchHistory[0].watchHistory || [];
+  
+  // Apply pagination
+  const startIndex = (page - 1) * limit;
+  const endIndex = startIndex + limit;
+  const paginatedVideos = videos.slice(startIndex, endIndex);
+  
+  // Calculate pagination metadata
+  const totalVideos = videos.length;
+  const totalPages = Math.ceil(totalVideos / limit);
+  
+  res.status(200).json(
+    new apiResponse(200, 'Watch history retrieved successfully', {
+      videos: paginatedVideos,
+      pagination: {
+        currentPage: page,
+        totalPages,
+        totalVideos,
+        hasNextPage: page < totalPages,
+        hasPrevPage: page > 1
+      }
+    })
+  );
+});
+
 export {
   registerUser,
   loginUser,
@@ -458,4 +588,5 @@ export {
   updateUserCoverImage,
   getUserChannelProfile,
   toggleSubscription,
+  getUserWatchHistory,
 };
