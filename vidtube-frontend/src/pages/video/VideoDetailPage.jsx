@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { toast } from "react-hot-toast";
 import {
@@ -13,12 +13,20 @@ import {
 import Header from "../../components/layout/Header.jsx";
 import VideoPlayer from "../../components/video/VideoPlayer.jsx";
 import VideoGrid from "../../components/video/VideoGrid.jsx";
+import LikeButton from "../../components/social/LikeButton.jsx";
+import CommentSection from "../../components/social/CommentSection.jsx";
+import SubscribeButton from "../../components/social/SubscribeButton.jsx";
 import Button from "../../components/ui/Button.jsx";
 import {
   getVideoById,
   deleteVideo,
   getAllVideos,
 } from "../../services/videoService.js";
+import {
+  addToWatchHistory,
+  saveVideoProgress,
+  getVideoProgress,
+} from "../../services/historyService.js";
 import useAuth from "../../hooks/useAuth.js";
 
 export default function VideoDetailPage() {
@@ -31,13 +39,48 @@ export default function VideoDetailPage() {
   const [relatedLoading, setRelatedLoading] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [initialPlayTime, setInitialPlayTime] = useState(0);
+  const [videoLikes, setVideoLikes] = useState({
+    count: 0,
+    isLiked: false,
+  });
+
+  // Handle video progress saving
+  const handleProgress = useCallback((vidId, currentTime, duration) => {
+    saveVideoProgress(vidId, currentTime, duration);
+  }, []);
+
+  // Add to watch history when video loads
+  useEffect(() => {
+    if (isAuthenticated && videoId) {
+      addToWatchHistory(videoId).catch((err) => {
+        // Silently fail - history tracking shouldn't interrupt viewing
+        console.error("Failed to add to history:", err);
+      });
+    }
+  }, [isAuthenticated, videoId]);
+
+  // Get saved progress for resume functionality
+  useEffect(() => {
+    if (videoId) {
+      const savedProgress = getVideoProgress(videoId);
+      if (savedProgress && savedProgress.percentage < 95) {
+        setInitialPlayTime(savedProgress.currentTime);
+      }
+    }
+  }, [videoId]);
 
   useEffect(() => {
     const fetchVideo = async () => {
       try {
         setLoading(true);
         const response = await getVideoById(videoId);
-        setVideo(response.data.data);
+        const videoData = response.data.data;
+        setVideo(videoData);
+        setVideoLikes({
+          count: videoData.likesCount || 0,
+          isLiked: videoData.isLiked || false,
+        });
       } catch (error) {
         toast.error("Failed to load video");
         navigate("/");
@@ -149,7 +192,13 @@ export default function VideoDetailPage() {
           <div className="lg:col-span-2 space-y-6">
             {/* Video Player */}
             <div className="w-full aspect-video bg-black rounded-lg overflow-hidden">
-              <VideoPlayer videoUrl={video.url} poster={video.thumbnailUrl} />
+              <VideoPlayer
+                videoUrl={video.url}
+                poster={video.thumbnailUrl}
+                videoId={videoId}
+                onProgress={handleProgress}
+                initialTime={initialPlayTime}
+              />
             </div>
 
             {/* Video Info */}
@@ -216,37 +265,66 @@ export default function VideoDetailPage() {
                 )}
               </div>
 
-              {/* Owner Info */}
+              {/* Action Buttons */}
               <div className="flex items-center gap-3 pb-4 border-b border-border">
-                <Link
-                  to={`/channel/${video.owner?.username || video.owner?._id}`}
-                  className="shrink-0"
-                >
-                  {video.owner?.avatarUrl ? (
-                    <img
-                      src={video.owner.avatarUrl}
-                      alt={video.owner.fullName || video.owner.username}
-                      className="w-12 h-12 rounded-full object-cover"
-                    />
-                  ) : (
-                    <div className="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center text-primary font-semibold text-lg">
-                      {(video.owner?.fullName || video.owner?.username || "U")
-                        .charAt(0)
-                        .toUpperCase()}
-                    </div>
-                  )}
-                </Link>
-                <div className="flex-1 min-w-0">
+                <LikeButton
+                  videoId={videoId}
+                  initialLikesCount={videoLikes.count}
+                  initialIsLiked={videoLikes.isLiked}
+                  onLikeChange={(isLiked, count) => {
+                    setVideoLikes({ isLiked, count });
+                    setVideo((prev) => ({
+                      ...prev,
+                      isLiked,
+                      likesCount: count,
+                    }));
+                  }}
+                />
+              </div>
+
+              {/* Owner Info */}
+              <div className="flex items-center justify-between pb-4 border-b border-border">
+                <div className="flex items-center gap-3 flex-1 min-w-0">
                   <Link
                     to={`/channel/${video.owner?.username || video.owner?._id}`}
-                    className="block font-semibold text-white hover:text-primary transition-colors"
+                    className="shrink-0"
                   >
-                    {video.owner?.fullName ||
-                      video.owner?.username ||
-                      "Unknown"}
+                    {video.owner?.avatarUrl ? (
+                      <img
+                        src={video.owner.avatarUrl}
+                        alt={video.owner.fullName || video.owner.username}
+                        className="w-12 h-12 rounded-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center text-primary font-semibold text-lg">
+                        {(video.owner?.fullName || video.owner?.username || "U")
+                          .charAt(0)
+                          .toUpperCase()}
+                      </div>
+                    )}
                   </Link>
-                  <p className="text-sm text-textSecondary">Video Creator</p>
+                  <div className="flex-1 min-w-0">
+                    <Link
+                      to={`/channel/${
+                        video.owner?.username || video.owner?._id
+                      }`}
+                      className="block font-semibold text-white hover:text-primary transition-colors"
+                    >
+                      {video.owner?.fullName ||
+                        video.owner?.username ||
+                        "Unknown"}
+                    </Link>
+                    <p className="text-sm text-textSecondary">Video Creator</p>
+                  </div>
                 </div>
+                {!isOwner && video.owner?._id && (
+                  <SubscribeButton
+                    channelId={video.owner._id}
+                    channelUsername={video.owner?.username}
+                    initialIsSubscribed={false}
+                    initialSubscribersCount={0}
+                  />
+                )}
               </div>
 
               {/* Description */}
@@ -257,6 +335,9 @@ export default function VideoDetailPage() {
                   </p>
                 </div>
               )}
+
+              {/* Comments Section */}
+              <CommentSection videoId={videoId} />
             </div>
           </div>
 

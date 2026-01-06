@@ -1,4 +1,4 @@
-import { useRef, useState, useEffect } from "react";
+import { useRef, useState, useEffect, useCallback } from "react";
 import {
   Play,
   Pause,
@@ -8,7 +8,14 @@ import {
   Minimize,
 } from "lucide-react";
 
-export default function VideoPlayer({ videoUrl, poster, autoPlay = false }) {
+export default function VideoPlayer({
+  videoUrl,
+  poster,
+  autoPlay = false,
+  videoId,
+  onProgress,
+  initialTime = 0,
+}) {
   const videoRef = useRef(null);
   const [isPlaying, setIsPlaying] = useState(autoPlay);
   const [isMuted, setIsMuted] = useState(false);
@@ -18,16 +25,51 @@ export default function VideoPlayer({ videoUrl, poster, autoPlay = false }) {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showControls, setShowControls] = useState(true);
   const controlsTimeoutRef = useRef(null);
+  const progressIntervalRef = useRef(null);
+
+  // Save progress periodically
+  const saveProgress = useCallback(() => {
+    if (onProgress && videoId && videoRef.current) {
+      const video = videoRef.current;
+      if (video.currentTime > 0 && video.duration > 0) {
+        onProgress(videoId, video.currentTime, video.duration);
+      }
+    }
+  }, [onProgress, videoId]);
 
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
 
     const updateTime = () => setCurrentTime(video.currentTime);
-    const updateDuration = () => setDuration(video.duration);
-    const handlePlay = () => setIsPlaying(true);
-    const handlePause = () => setIsPlaying(false);
-    const handleEnded = () => setIsPlaying(false);
+    const updateDuration = () => {
+      setDuration(video.duration);
+      // Set initial time if provided
+      if (initialTime > 0 && video.duration > 0) {
+        video.currentTime = initialTime;
+      }
+    };
+    const handlePlay = () => {
+      setIsPlaying(true);
+      // Start progress tracking interval
+      if (onProgress && videoId) {
+        progressIntervalRef.current = setInterval(saveProgress, 10000); // Save every 10 seconds
+      }
+    };
+    const handlePause = () => {
+      setIsPlaying(false);
+      saveProgress(); // Save on pause
+      if (progressIntervalRef.current) {
+        clearInterval(progressIntervalRef.current);
+      }
+    };
+    const handleEnded = () => {
+      setIsPlaying(false);
+      saveProgress(); // Save on end
+      if (progressIntervalRef.current) {
+        clearInterval(progressIntervalRef.current);
+      }
+    };
 
     video.addEventListener("timeupdate", updateTime);
     video.addEventListener("loadedmetadata", updateDuration);
@@ -41,8 +83,11 @@ export default function VideoPlayer({ videoUrl, poster, autoPlay = false }) {
       video.removeEventListener("play", handlePlay);
       video.removeEventListener("pause", handlePause);
       video.removeEventListener("ended", handleEnded);
+      if (progressIntervalRef.current) {
+        clearInterval(progressIntervalRef.current);
+      }
     };
-  }, []);
+  }, [initialTime, saveProgress, onProgress, videoId]);
 
   useEffect(() => {
     const video = videoRef.current;
@@ -155,7 +200,7 @@ export default function VideoPlayer({ videoUrl, poster, autoPlay = false }) {
 
       {/* Controls overlay */}
       <div
-        className={`absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent transition-opacity duration-300 ${
+        className={`absolute inset-0 bg-linear-to-t from-black/80 via-transparent to-transparent transition-opacity duration-300 ${
           showControls ? "opacity-100" : "opacity-0"
         }`}
       >

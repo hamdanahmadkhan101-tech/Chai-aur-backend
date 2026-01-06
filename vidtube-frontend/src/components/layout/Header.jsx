@@ -1,19 +1,42 @@
 import { Link, useNavigate } from "react-router-dom";
-import { Search, Upload, User } from "lucide-react";
-import { useState } from "react";
+import {
+  Search,
+  Upload,
+  User,
+  BarChart3,
+  History,
+  Heart,
+  Settings,
+} from "lucide-react";
+import { useState, useRef, useEffect } from "react";
 import useAuth from "../../hooks/useAuth.js";
+import NotificationBell from "../social/NotificationBell.jsx";
 import Button from "../ui/Button.jsx";
 
 export default function Header() {
   const { user, isAuthenticated, logout } = useAuth();
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
+  const [showUserMenu, setShowUserMenu] = useState(false);
+  const menuRef = useRef(null);
+
+  // Close menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (menuRef.current && !menuRef.current.contains(event.target)) {
+        setShowUserMenu(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   const handleLogout = async () => {
     try {
+      setShowUserMenu(false);
       await logout();
       navigate("/");
-    } catch (error) {
+    } catch {
       // Logout errors are handled in AuthContext
     }
   };
@@ -74,6 +97,26 @@ export default function Header() {
                     <Search className="h-5 w-5" />
                   </Button>
                 </Link>
+                <Link to="/history" className="hidden sm:block">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="flex items-center gap-2"
+                  >
+                    <History className="h-4 w-4" />
+                    <span className="hidden lg:inline">History</span>
+                  </Button>
+                </Link>
+                <Link to="/liked" className="hidden md:block">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="flex items-center gap-2"
+                  >
+                    <Heart className="h-4 w-4" />
+                    <span className="hidden lg:inline">Liked</span>
+                  </Button>
+                </Link>
                 <Link to="/upload">
                   <Button
                     variant="ghost"
@@ -84,30 +127,100 @@ export default function Header() {
                     <span className="hidden lg:inline">Upload</span>
                   </Button>
                 </Link>
-                <Link
-                  to={`/channel/${user?.username || user?._id}`}
-                  className="flex items-center gap-2 hover:opacity-80 transition-opacity"
-                >
-                  {user?.avatarUrl ? (
-                    <img
-                      src={user.avatarUrl}
-                      alt={user.fullName || user.username}
-                      className="w-8 h-8 rounded-full object-cover"
-                    />
-                  ) : (
-                    <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-primary font-semibold text-sm">
-                      {(user?.fullName || user?.username || "U")
-                        .charAt(0)
-                        .toUpperCase()}
+                <Link to="/dashboard" className="hidden md:block">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="flex items-center gap-2"
+                  >
+                    <BarChart3 className="h-4 w-4" />
+                    <span className="hidden lg:inline">Dashboard</span>
+                  </Button>
+                </Link>
+                <NotificationBell />
+
+                {/* User Menu Dropdown */}
+                <div className="relative" ref={menuRef}>
+                  <button
+                    onClick={() => setShowUserMenu(!showUserMenu)}
+                    className="flex items-center gap-2 hover:opacity-80 transition-opacity cursor-pointer"
+                  >
+                    {user?.avatarUrl ? (
+                      <img
+                        src={user.avatarUrl}
+                        alt={user.fullName || user.username}
+                        className="w-8 h-8 rounded-full object-cover border-2 border-transparent hover:border-primary transition-colors"
+                      />
+                    ) : (
+                      <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-primary font-semibold text-sm">
+                        {(user?.fullName || user?.username || "U")
+                          .charAt(0)
+                          .toUpperCase()}
+                      </div>
+                    )}
+                  </button>
+
+                  {/* Dropdown Menu */}
+                  {showUserMenu && (
+                    <div className="absolute right-0 top-full mt-2 w-64 bg-surface border border-border rounded-lg shadow-xl z-50 overflow-hidden">
+                      {/* User Info */}
+                      <div className="px-4 py-3 border-b border-border">
+                        <p className="text-sm font-medium text-white truncate">
+                          {user?.fullName || user?.username}
+                        </p>
+                        <p className="text-xs text-textSecondary truncate">
+                          @{user?.username}
+                        </p>
+                      </div>
+
+                      {/* Menu Items */}
+                      <div className="py-2">
+                        <Link
+                          to={`/channel/${user?.username || user?._id}`}
+                          onClick={() => setShowUserMenu(false)}
+                          className="flex items-center gap-3 px-4 py-2 text-sm text-textSecondary hover:bg-surface-light hover:text-white transition-colors"
+                        >
+                          <User className="h-4 w-4" />
+                          Your Channel
+                        </Link>
+                        <Link
+                          to="/history"
+                          onClick={() => setShowUserMenu(false)}
+                          className="flex items-center gap-3 px-4 py-2 text-sm text-textSecondary hover:bg-surface-light hover:text-white transition-colors sm:hidden"
+                        >
+                          <History className="h-4 w-4" />
+                          Watch History
+                        </Link>
+                        <Link
+                          to="/liked"
+                          onClick={() => setShowUserMenu(false)}
+                          className="flex items-center gap-3 px-4 py-2 text-sm text-textSecondary hover:bg-surface-light hover:text-white transition-colors md:hidden"
+                        >
+                          <Heart className="h-4 w-4" />
+                          Liked Videos
+                        </Link>
+                        <Link
+                          to="/settings"
+                          onClick={() => setShowUserMenu(false)}
+                          className="flex items-center gap-3 px-4 py-2 text-sm text-textSecondary hover:bg-surface-light hover:text-white transition-colors"
+                        >
+                          <Settings className="h-4 w-4" />
+                          Settings
+                        </Link>
+                      </div>
+
+                      {/* Logout */}
+                      <div className="border-t border-border py-2">
+                        <button
+                          onClick={handleLogout}
+                          className="flex items-center gap-3 px-4 py-2 text-sm text-red-400 hover:bg-red-500/10 w-full transition-colors cursor-pointer"
+                        >
+                          Log out
+                        </button>
+                      </div>
                     </div>
                   )}
-                  <span className="hidden text-sm font-medium text-textSecondary sm:inline-block">
-                    {user?.fullName || user?.username}
-                  </span>
-                </Link>
-                <Button variant="outline" size="sm" onClick={handleLogout}>
-                  Log out
-                </Button>
+                </div>
               </>
             ) : (
               <>

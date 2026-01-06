@@ -3,6 +3,7 @@ import { useParams, Link } from "react-router-dom";
 import { User, Video, Eye, Calendar } from "lucide-react";
 import Header from "../../components/layout/Header.jsx";
 import VideoGrid from "../../components/video/VideoGrid.jsx";
+import SubscribeButton from "../../components/social/SubscribeButton.jsx";
 import Button from "../../components/ui/Button.jsx";
 import { getVideosByUserId } from "../../services/videoService.js";
 import { getUserChannelProfile } from "../../services/userService.js";
@@ -222,13 +223,36 @@ export default function ChannelPage() {
             </div>
 
             {/* Actions */}
-            {isOwnChannel && (
-              <div>
-                <Link to="/upload">
-                  <Button>Upload Video</Button>
-                </Link>
-              </div>
-            )}
+            <div className="flex items-center gap-3">
+              {isOwnChannel ? (
+                <>
+                  <Link to="/upload">
+                    <Button>Upload Video</Button>
+                  </Link>
+                  <Link to="/dashboard">
+                    <Button variant="outline">Dashboard</Button>
+                  </Link>
+                </>
+              ) : (
+                channelUser._id && (
+                  <SubscribeButton
+                    channelId={channelUser._id}
+                    channelUsername={channelUser.username}
+                    initialIsSubscribed={channelUser.isSubscribed || false}
+                    initialSubscribersCount={
+                      channelUser.subscribersCount || 0
+                    }
+                    onSubscriptionChange={(isSubscribed, count) => {
+                      setChannelUser((prev) => ({
+                        ...prev,
+                        isSubscribed,
+                        subscribersCount: count,
+                      }));
+                    }}
+                  />
+                )
+              )}
+            </div>
           </div>
         </div>
       </div>

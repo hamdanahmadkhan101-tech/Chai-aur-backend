@@ -10,6 +10,12 @@ import VideoDetailPage from "./pages/video/VideoDetailPage.jsx";
 import VideoEditPage from "./pages/video/VideoEditPage.jsx";
 import SearchPage from "./pages/video/SearchPage.jsx";
 import ChannelPage from "./pages/channel/ChannelPage.jsx";
+import DashboardPage from "./pages/dashboard/DashboardPage.jsx";
+import NotificationsPage from "./pages/notifications/NotificationsPage.jsx";
+import WatchHistoryPage from "./pages/user/WatchHistoryPage.jsx";
+import LikedVideosPage from "./pages/user/LikedVideosPage.jsx";
+import ProfileSettingsPage from "./pages/user/ProfileSettingsPage.jsx";
+import PasswordChangePage from "./pages/settings/PasswordChangePage.jsx";
 import { AuthProvider } from "./context/AuthContext.jsx";
 import ProtectedRoute from "./components/common/ProtectedRoute.jsx";
 import AuthLayout from "./components/auth/AuthLayout.jsx";
@@ -67,6 +73,64 @@ function App() {
 
           {/* Channel Routes */}
           <Route path="/channel/:username" element={<ChannelPage />} />
+
+          {/* Dashboard Routes */}
+          <Route
+            path="/dashboard"
+            element={
+              <ProtectedRoute>
+                <DashboardPage />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Notifications Route */}
+          <Route
+            path="/notifications"
+            element={
+              <ProtectedRoute>
+                <NotificationsPage />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Watch History Route */}
+          <Route
+            path="/history"
+            element={
+              <ProtectedRoute>
+                <WatchHistoryPage />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Liked Videos Route */}
+          <Route
+            path="/liked"
+            element={
+              <ProtectedRoute>
+                <LikedVideosPage />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Settings Routes */}
+          <Route
+            path="/settings"
+            element={
+              <ProtectedRoute>
+                <ProfileSettingsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/settings/password"
+            element={
+              <ProtectedRoute>
+                <PasswordChangePage />
+              </ProtectedRoute>
+            }
+          />
 
           {/* Profile Route - Redirect to channel */}
           <Route

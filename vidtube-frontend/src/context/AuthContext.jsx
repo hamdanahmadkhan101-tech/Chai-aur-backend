@@ -116,6 +116,17 @@ export function AuthProvider({ children }) {
     }
   }, []);
 
+  const refreshUser = useCallback(async () => {
+    try {
+      const res = await getCurrentUser();
+      dispatch({ type: "INIT_SUCCESS", payload: res.data.data });
+      return res.data.data;
+    } catch (error) {
+      console.error("Failed to refresh user:", error);
+      return null;
+    }
+  }, []);
+
   const value = useMemo(
     () => ({
       user: state.user,
@@ -124,9 +135,18 @@ export function AuthProvider({ children }) {
       login,
       register,
       logout,
+      refreshUser,
       isAuthenticated: Boolean(state.user),
     }),
-    [state.user, state.loading, state.error, login, register, logout]
+    [
+      state.user,
+      state.loading,
+      state.error,
+      login,
+      register,
+      logout,
+      refreshUser,
+    ]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

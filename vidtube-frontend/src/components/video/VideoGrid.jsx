@@ -1,6 +1,13 @@
-import VideoCard from './VideoCard.jsx';
+import VideoCard from "./VideoCard.jsx";
 
-export default function VideoGrid({ videos, loading, error, emptyMessage = 'No videos found' }) {
+export default function VideoGrid({
+  videos,
+  loading,
+  error,
+  emptyMessage = "No videos found",
+  showUnlike = false,
+  onUnlike,
+}) {
   if (loading) {
     return (
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
@@ -23,7 +30,9 @@ export default function VideoGrid({ videos, loading, error, emptyMessage = 'No v
   if (error) {
     return (
       <div className="flex flex-col items-center justify-center py-12 px-4">
-        <div className="text-red-500 text-lg font-semibold mb-2">Error loading videos</div>
+        <div className="text-red-500 text-lg font-semibold mb-2">
+          Error loading videos
+        </div>
         <p className="text-textSecondary text-sm">{error}</p>
       </div>
     );
@@ -41,9 +50,13 @@ export default function VideoGrid({ videos, loading, error, emptyMessage = 'No v
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
       {videos.map((video) => (
-        <VideoCard key={video._id} video={video} />
+        <VideoCard
+          key={video._id}
+          video={video}
+          showUnlike={showUnlike}
+          onUnlike={onUnlike}
+        />
       ))}
     </div>
   );
 }
-

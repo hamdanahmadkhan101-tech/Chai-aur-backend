@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
-import { Clock, Eye } from "lucide-react";
+import { Clock, Eye, HeartOff } from "lucide-react";
 
-export default function VideoCard({ video }) {
+export default function VideoCard({ video, showUnlike = false, onUnlike }) {
   const formatDuration = (seconds) => {
     if (!seconds || isNaN(seconds)) return "0:00";
     const mins = Math.floor(seconds / 60);
@@ -33,10 +33,18 @@ export default function VideoCard({ video }) {
     return `${Math.floor(diffInSeconds / 31536000)}y ago`;
   };
 
+  const handleUnlike = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (onUnlike) {
+      onUnlike(video._id);
+    }
+  };
+
   return (
     <Link
       to={`/video/${video._id}`}
-      className="group flex flex-col cursor-pointer transition-transform duration-200 hover:scale-[1.02]"
+      className="group relative flex flex-col cursor-pointer transition-transform duration-200 hover:scale-[1.02]"
     >
       {/* Thumbnail */}
       <div className="relative w-full aspect-video bg-surface rounded-lg overflow-hidden mb-3">
@@ -100,6 +108,17 @@ export default function VideoCard({ video }) {
           </div>
         </div>
       </div>
+
+      {/* Unlike button */}
+      {showUnlike && onUnlike && (
+        <button
+          onClick={handleUnlike}
+          className="absolute top-2 right-2 p-2 rounded-full bg-black/60 text-white opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-500 cursor-pointer"
+          title="Remove from liked"
+        >
+          <HeartOff className="h-4 w-4" />
+        </button>
+      )}
     </Link>
   );
 }
