@@ -1,15 +1,34 @@
+// ============================================
+// IMPORTS & DEPENDENCIES
+// ============================================
 import asyncHandler from '../utils/asyncHandler.js';
 import apiError from '../utils/apiError.js';
+import apiResponse from '../utils/apiResponse.js';
+import jwt from 'jsonwebtoken';
+import mongoose from 'mongoose';
+
+// Models
 import { User } from '../models/user.model.js';
 import Subscription from '../models/subscription.model.js';
+// Note: Video collection referenced by name in aggregation pipeline
+
 import Video from '../models/video.model.js';
+
+// Services
 import {
   uploadOnCloudinary,
   deleteFromCloudinary,
 } from '../utils/cloudinary.js';
-import apiResponse from '../utils/apiResponse.js';
-import jwt from 'jsonwebtoken';
-import mongoose from 'mongoose';
+
+// ============================================
+// UTILITY FUNCTIONS
+// ============================================
+
+/**
+ * Generate access and refresh tokens for a user
+ * @param {string} userId - User's MongoDB ObjectId
+ * @returns {Object} Object containing accessToken and refreshToken
+ */
 
 const generateAcessAndRefreshTokens = async (userId) => {
   try {
@@ -27,6 +46,15 @@ const generateAcessAndRefreshTokens = async (userId) => {
   }
 };
 
+// ============================================
+// AUTHENTICATION CONTROLLERS
+// ============================================
+
+/**
+ * Register a new user with avatar and optional cover image
+ * @route POST /api/v1/users/register
+ * @access Public
+ */
 const registerUser = asyncHandler(async (req, res) => {
   const { fullName, username, email, password } = req.body;
   // console.log(req.body);
@@ -78,6 +106,11 @@ const registerUser = asyncHandler(async (req, res) => {
     .json(new apiResponse(201, 'User registered successfully', createdUser));
 });
 
+/**
+ * Authenticate user with email/username and password
+ * @route POST /api/v1/users/login
+ * @access Public
+ */
 const loginUser = asyncHandler(async (req, res) => {
   const { email, username, password } = req.body;
 
@@ -126,6 +159,11 @@ const loginUser = asyncHandler(async (req, res) => {
     );
 });
 
+/**
+ * Logout user and remove refresh token
+ * @route POST /api/v1/users/logout
+ * @access Private
+ */
 const logoutUser = asyncHandler(async (req, res) => {
   const refreshToken = req.cookies.refreshToken || req.body.refreshToken;
 
@@ -144,6 +182,11 @@ const logoutUser = asyncHandler(async (req, res) => {
     .json(new apiResponse(200, 'User logged out successfully'));
 });
 
+/**
+ * Refresh access token using refresh token
+ * @route POST /api/v1/users/refresh-token
+ * @access Public
+ */
 const refreshAccessToken = asyncHandler(async (req, res) => {
   const incomingRefreshToken =
     req.cookies.refreshToken || req.body.refreshToken;
@@ -189,6 +232,15 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
     );
 });
 
+// ============================================
+// ACCOUNT SECURITY CONTROLLERS
+// ============================================
+
+/**
+ * Change user's current password
+ * @route PATCH /api/v1/users/change-password
+ * @access Private
+ */
 const changeCurrentUserPassword = asyncHandler(async (req, res) => {
   const { currentPassword, newPassword } = req.body;
 
@@ -216,6 +268,15 @@ const changeCurrentUserPassword = asyncHandler(async (req, res) => {
     );
 });
 
+// ============================================
+// PROFILE MANAGEMENT CONTROLLERS
+// ============================================
+
+/**
+ * Get current user's profile information
+ * @route GET /api/v1/users/profile
+ * @access Private
+ */
 const getCurrentUserProfile = asyncHandler(async (req, res) => {
   const user = await User.findById(req.user._id).select(
     '-password -refreshTokens'
@@ -229,6 +290,11 @@ const getCurrentUserProfile = asyncHandler(async (req, res) => {
     .json(new apiResponse(200, 'User profile fetched successfully', user));
 });
 
+/**
+ * Update user's profile information
+ * @route PATCH /api/v1/users/update-profile
+ * @access Private
+ */
 const updateUserProfile = asyncHandler(async (req, res) => {
   const { fullName, email, username } = req.body;
 
@@ -266,6 +332,11 @@ const updateUserProfile = asyncHandler(async (req, res) => {
     .json(new apiResponse(200, 'Profile updated successfully', updatedUser));
 });
 
+/**
+ * Update user's avatar image
+ * @route PATCH /api/v1/users/avatar
+ * @access Private
+ */
 const updateUserAvatar = asyncHandler(async (req, res) => {
   const avatarPath = req.file?.path;
 
@@ -296,6 +367,11 @@ const updateUserAvatar = asyncHandler(async (req, res) => {
     .json(new apiResponse(200, 'Avatar updated successfully', user));
 });
 
+/**
+ * Update user's cover image
+ * @route PATCH /api/v1/users/cover-image
+ * @access Private
+ */
 const updateUserCoverImage = asyncHandler(async (req, res) => {
   const coverPath = req.file?.path;
 
@@ -326,6 +402,15 @@ const updateUserCoverImage = asyncHandler(async (req, res) => {
     .json(new apiResponse(200, 'Cover image updated successfully', user));
 });
 
+// ============================================
+// CHANNEL & SOCIAL CONTROLLERS
+// ============================================
+
+/**
+ * Get user's channel profile with subscription data
+ * @route GET /api/v1/users/c/:username
+ * @access Private
+ */
 const getUserChannelProfile = asyncHandler(async (req, res) => {
   const { username } = req.params;
   if (!username?.trim()) {
@@ -392,9 +477,8 @@ const getUserChannelProfile = asyncHandler(async (req, res) => {
 
 /**
  * Toggle subscription status for a channel
- * If user is subscribed - unsubscribe them
- * If user is not subscribed - subscribe them
- * Prevents users from subscribing to their own channel
+ * @route POST /api/v1/users/toggle-subscription/:channelId
+ * @access Private
  */
 const toggleSubscription = asyncHandler(async (req, res) => {
   const { channelId } = req.params;
@@ -447,10 +531,14 @@ const toggleSubscription = asyncHandler(async (req, res) => {
   }
 });
 
+// ============================================
+// CONTENT CONTROLLERS
+// ============================================
+
 /**
- * Retrieve user's watch history with video details and owner information
- * Returns paginated results with comprehensive video metadata
- * Includes owner details for each video in the watch history
+ * Get user's watch history with pagination
+ * @route GET /api/v1/users/watch-history
+ * @access Private
  */
 const getUserWatchHistory = asyncHandler(async (req, res) => {
   // Get pagination parameters from query string
@@ -576,17 +664,29 @@ const getUserWatchHistory = asyncHandler(async (req, res) => {
   );
 });
 
+// ============================================
+// EXPORTS - Organized by Functionality
+// ============================================
 export {
+  // Authentication Controllers
   registerUser,
   loginUser,
   logoutUser,
   refreshAccessToken,
-  changeCurrentUserPassword,
+  
+  // Profile Management Controllers
   getCurrentUserProfile,
   updateUserProfile,
   updateUserAvatar,
   updateUserCoverImage,
+  
+  // Account Security Controllers
+  changeCurrentUserPassword,
+  
+  // Channel & Social Controllers
   getUserChannelProfile,
   toggleSubscription,
+  
+  // Content Controllers
   getUserWatchHistory,
 };

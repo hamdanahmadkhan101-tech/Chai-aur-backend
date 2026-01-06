@@ -1,16 +1,25 @@
 import { Router } from 'express';
 import {
+  // Authentication Controllers
   registerUser,
   loginUser,
   logoutUser,
   refreshAccessToken,
-  changeCurrentUserPassword,
+  
+  // Profile Management Controllers
   getCurrentUserProfile,
   updateUserProfile,
   updateUserAvatar,
   updateUserCoverImage,
+  
+  // Account Security Controllers
+  changeCurrentUserPassword,
+  
+  // Channel & Social Controllers
   getUserChannelProfile,
   toggleSubscription,
+  
+  // Content Controllers
   getUserWatchHistory,
 } from '../controllers/user.controller.js';
 import upload from '../middlewares/multer.middleware.js';
@@ -19,8 +28,10 @@ import { verifyJWT } from '../middlewares/auth.middleware.js';
 const router = Router();
 
 // ============================================
-// PUBLIC ROUTES (Authentication)
+// PUBLIC ROUTES (No Authentication Required)
 // ============================================
+
+// User Registration & Authentication
 router.route('/register').post(
   upload.fields([
     { name: 'avatar', maxCount: 1 },
@@ -32,18 +43,17 @@ router.route('/login').post(loginUser);
 router.route('/refresh-token').post(refreshAccessToken);
 
 // ============================================
-// PROTECTED ROUTES (Require Authentication)
+// PROTECTED ROUTES (Authentication Required)
 // ============================================
 
-// Auth Management
+// Authentication Management
 router.route('/logout').post(verifyJWT, logoutUser);
 
-// Profile Operations
+// Profile Information & Management
 router.route('/profile').get(verifyJWT, getCurrentUserProfile);
 router.route('/update-profile').patch(verifyJWT, updateUserProfile);
 
-// Account Settings
-router.route('/change-password').patch(verifyJWT, changeCurrentUserPassword);
+// Media Upload & Management
 router
   .route('/avatar')
   .patch(verifyJWT, upload.single('avatar'), updateUserAvatar);
@@ -51,13 +61,14 @@ router
   .route('/cover-image')
   .patch(verifyJWT, upload.single('coverImage'), updateUserCoverImage);
 
-// Channel Profile (Public - can view any user's channel)
-router.route('/c/:username').get(verifyJWT, getUserChannelProfile);
+// Account Security
+router.route('/change-password').patch(verifyJWT, changeCurrentUserPassword);
 
-// Subscription Management
+// Channel & Social Features
+router.route('/c/:username').get(verifyJWT, getUserChannelProfile);
 router.route('/toggle-subscription/:channelId').post(verifyJWT, toggleSubscription);
 
-// Watch History
+// Content & History
 router.route('/watch-history').get(verifyJWT, getUserWatchHistory);
 
 export default router;
