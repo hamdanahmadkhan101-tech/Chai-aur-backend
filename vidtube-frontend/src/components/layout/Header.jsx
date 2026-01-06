@@ -162,7 +162,7 @@ export default function Header() {
 
                   {/* Dropdown Menu */}
                   {showUserMenu && (
-                    <div className="absolute right-0 top-full mt-2 w-64 bg-surface border border-border rounded-lg shadow-xl z-50 overflow-hidden">
+                    <div className="absolute right-0 top-full mt-2 w-64 bg-surface border border-border rounded-lg shadow-xl z-[100] overflow-hidden">
                       {/* User Info */}
                       <div className="px-4 py-3 border-b border-border">
                         <p className="text-sm font-medium text-white truncate">

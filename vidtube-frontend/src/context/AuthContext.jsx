@@ -33,8 +33,10 @@ function authReducer(state, action) {
     case "REGISTER_START":
       return { ...state, loading: true, error: null };
     case "LOGIN_SUCCESS":
-    case "REGISTER_SUCCESS":
       return { ...state, loading: false, user: action.payload, error: null };
+    case "REGISTER_SUCCESS":
+      // Don't set user on registration - user must log in separately
+      return { ...state, loading: false, error: null };
     case "LOGIN_ERROR":
     case "REGISTER_ERROR":
       return { ...state, loading: false, error: action.payload };

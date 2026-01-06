@@ -22,9 +22,11 @@ export default function ChannelPage() {
   const [hasMore, setHasMore] = useState(false);
   const [totalVideos, setTotalVideos] = useState(0);
   const [totalViews, setTotalViews] = useState(0);
+  const [error, setError] = useState(null);
   const isInitialMount = useRef(true);
 
   useEffect(() => {
+    setError(null);
     fetchChannelData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [username]);
@@ -65,10 +67,20 @@ export default function ChannelPage() {
           setChannelUser(userData);
           setUserId(targetUserId);
         } catch (err) {
-          if (!isInitialMount.current) {
+          // Only show error if not initial mount and it's a real 404
+          const isNotFound = err.response?.status === 404;
+          const isAuthError = err.response?.status === 401;
+
+          if (isAuthError) {
+            // User needs to log in to view this channel
+            setChannelUser(null);
+            setError("Please log in to view this channel");
+          } else if (isNotFound && !isInitialMount.current) {
             toast.error("Channel not found");
+            setChannelUser(null);
+          } else {
+            setChannelUser(null);
           }
-          setChannelUser(null);
           isInitialMount.current = false;
           return;
         }
@@ -155,10 +167,24 @@ export default function ChannelPage() {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
-          <p className="text-xl font-semibold mb-2">Channel not found</p>
-          <Link to="/">
-            <Button variant="outline">Go Home</Button>
-          </Link>
+          <p className="text-xl font-semibold mb-2 text-white">
+            {error || "Channel not found"}
+          </p>
+          <p className="text-textSecondary mb-4">
+            {error
+              ? "You need to be logged in to view this channel."
+              : "The channel you're looking for doesn't exist."}
+          </p>
+          <div className="flex gap-3 justify-center">
+            {error && (
+              <Link to="/login">
+                <Button variant="primary">Log In</Button>
+              </Link>
+            )}
+            <Link to="/">
+              <Button variant="outline">Go Home</Button>
+            </Link>
+          </div>
         </div>
       </div>
     );
