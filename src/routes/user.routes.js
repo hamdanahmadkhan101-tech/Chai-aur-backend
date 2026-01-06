@@ -7,6 +7,10 @@ import {
   changeCurrentUserPassword,
   getCurrentUserProfile,
   updateUserProfile,
+  updateUserAvatar,
+  updateUserCoverImage,
+  getUserChannelProfile,
+  toggleSubscription,
 } from '../controllers/user.controller.js';
 import upload from '../middlewares/multer.middleware.js';
 import { verifyJWT } from '../middlewares/auth.middleware.js';
@@ -46,5 +50,10 @@ router
   .route('/cover-image')
   .patch(verifyJWT, upload.single('coverImage'), updateUserCoverImage);
 
-  
+// Channel Profile (Public - can view any user's channel)
+router.route('/c/:username').get(verifyJWT, getUserChannelProfile);
+
+// Subscription Management
+router.route('/toggle-subscription/:channelId').post(verifyJWT, toggleSubscription);
+
 export default router;
