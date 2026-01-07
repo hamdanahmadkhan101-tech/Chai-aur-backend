@@ -14,6 +14,9 @@ const allowedOrigins = process.env.CORS_ORIGIN
   ? process.env.CORS_ORIGIN.split(',').map((origin) => origin.trim())
   : ['http://localhost:5173'];
 
+// Log allowed origins for deployment debugging
+console.log('CORS allowed origins:', allowedOrigins);
+
 const corsOptions = {
   origin: (origin, callback) => {
     // Allow requests with no origin (health checks, mobile apps, Postman, server-to-server)
@@ -38,6 +41,9 @@ const corsOptions = {
   ],
   optionsSuccessStatus: 204,
 };
+
+// Explicit preflight handler for API routes (Express 5-compatible pattern)
+app.options('/api/:path*', cors(corsOptions));
 
 app.use(cors(corsOptions));
 app.use(express.urlencoded({ extended: true }));
