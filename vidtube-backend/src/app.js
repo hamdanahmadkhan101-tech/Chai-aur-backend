@@ -9,10 +9,12 @@ import commentRoutes from './routes/comment.routes.js';
 
 const app = express();
 
-// CORS Configuration
-const allowedOrigins = process.env.CORS_ORIGIN
-  ? process.env.CORS_ORIGIN.split(',').map((origin) => origin.trim())
-  : ['http://localhost:5173'];
+// CORS Configuration - hardcoded origins for reliability
+const allowedOrigins = [
+  'https://vid-tube-kbfo.vercel.app',
+  'http://localhost:5173',
+  'http://localhost:3000',
+];
 
 app.use(
   cors({
