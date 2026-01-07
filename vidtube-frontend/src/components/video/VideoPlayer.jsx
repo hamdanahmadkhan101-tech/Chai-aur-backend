@@ -27,6 +27,10 @@ export default function VideoPlayer({
   const controlsTimeoutRef = useRef(null);
   const progressIntervalRef = useRef(null);
 
+  // Force HTTPS for video URLs (fix mixed content)
+  const secureVideoUrl = videoUrl?.replace(/^http:\/\//i, "https://");
+  const securePoster = poster?.replace(/^http:\/\//i, "https://");
+
   // Save progress periodically
   const saveProgress = useCallback(() => {
     if (onProgress && videoId && videoRef.current) {
@@ -191,8 +195,8 @@ export default function VideoPlayer({
     >
       <video
         ref={videoRef}
-        src={videoUrl}
-        poster={poster}
+        src={secureVideoUrl}
+        poster={securePoster}
         className="w-full h-full"
         playsInline
         onClick={togglePlay}
