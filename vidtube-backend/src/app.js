@@ -36,10 +36,9 @@ const corsOptions = {
     'X-Requested-With',
     'Accept',
   ],
+  optionsSuccessStatus: 204,
 };
 
-// Handle preflight requests for all routes (Express 5-safe wildcard)
-app.options('/(.*)', cors(corsOptions));
 app.use(cors(corsOptions));
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json({ limit: '16kb' }));
