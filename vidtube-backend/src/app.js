@@ -9,9 +9,23 @@ import commentRoutes from './routes/comment.routes.js';
 
 const app = express();
 
+// CORS Configuration - restrict to frontend domain in production
+const allowedOrigins = process.env.CORS_ORIGIN
+  ? process.env.CORS_ORIGIN.split(',').map((origin) => origin.trim())
+  : ['http://localhost:5173'];
+
 app.use(
   cors({
-    origin: process.env.CORS_ORIGIN,
+    origin: (origin, callback) => {
+      // Allow requests with no origin (like mobile apps or Postman) in development
+      if (!origin && process.env.NODE_ENV !== 'production') {
+        return callback(null, true);
+      }
+      if (allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+      return callback(new Error('Not allowed by CORS'));
+    },
     credentials: true,
   })
 );
@@ -19,6 +33,13 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.json({ limit: '16kb' }));
 app.use(express.static('public'));
 app.use(cookieParser());
+
+// ============================================
+// HEALTH CHECK (for Railway/deployment)
+// ============================================
+app.get('/health', (req, res) => {
+  res.status(200).json({ status: 'ok', timestamp: new Date().toISOString() });
+});
 
 // ============================================
 // ROUTES

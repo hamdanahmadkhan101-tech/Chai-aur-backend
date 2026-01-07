@@ -76,7 +76,7 @@ export function AuthProvider({ children }) {
       const { user, accessToken } = res.data.data;
       if (accessToken) {
         Cookies.set("accessToken", accessToken, {
-          sameSite: "strict",
+          sameSite: "lax",
           secure: window.location.protocol === "https:",
           path: "/",
         });

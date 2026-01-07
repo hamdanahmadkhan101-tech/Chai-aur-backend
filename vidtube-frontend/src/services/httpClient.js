@@ -73,8 +73,8 @@ httpClient.interceptors.response.use(
         const newAccessToken = response.data?.data?.accessToken;
         if (newAccessToken) {
           Cookies.set("accessToken", newAccessToken, {
-            sameSite: "strict",
-            secure: window.location.protocol === "https:",
+            sameSite: "lax",
+            secure: import.meta.env.PROD,
             path: "/",
           });
           originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
