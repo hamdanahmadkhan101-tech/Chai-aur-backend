@@ -202,45 +202,45 @@ export default function VideoPlayer({
         onClick={togglePlay}
       />
 
-      {/* Controls overlay - always show when paused or when showControls */}
-      <div
-        className={`absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent transition-opacity duration-300 pointer-events-none ${
-          showControls || !isPlaying ? "opacity-100" : "opacity-0"
-        }`}
-      >
+      {/* Controls overlay - always visible */}
+      <div className="absolute inset-0 pointer-events-none">
+        {/* Gradient overlay at bottom for controls visibility */}
+        <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-black/90 to-transparent" />
+
         {/* Big play button - centered, clickable */}
         {!isPlaying && (
           <button
             onClick={togglePlay}
-            className="absolute inset-0 bottom-20 flex items-center justify-center cursor-pointer pointer-events-auto"
+            className="absolute inset-0 flex items-center justify-center cursor-pointer pointer-events-auto"
             aria-label="Play video"
           >
-            <div className="w-16 h-16 md:w-20 md:h-20 rounded-full bg-primary/90 hover:bg-primary flex items-center justify-center transition-colors shadow-lg">
+            <div className="w-16 h-16 md:w-20 md:h-20 rounded-full bg-red-600 hover:bg-red-500 flex items-center justify-center transition-colors shadow-lg">
               <Play className="h-8 w-8 md:h-10 md:w-10 text-white ml-1" />
             </div>
           </button>
         )}
+
         {/* Progress bar */}
-        <div className="absolute bottom-14 left-0 right-0 px-4 pointer-events-auto z-10">
+        <div className="absolute bottom-12 left-0 right-0 px-4 pointer-events-auto">
           <input
             type="range"
             min="0"
-            max={duration || 0}
+            max={duration || 1}
             value={currentTime}
             onChange={handleSeek}
-            className="w-full h-2 bg-white/30 rounded-lg appearance-none cursor-pointer"
+            className="w-full h-1.5 rounded-full cursor-pointer accent-red-500"
             style={{
               background: `linear-gradient(to right, #ef4444 0%, #ef4444 ${
                 (currentTime / (duration || 1)) * 100
-              }%, rgba(255,255,255,0.3) ${
+              }%, rgba(255,255,255,0.4) ${
                 (currentTime / (duration || 1)) * 100
-              }%, rgba(255,255,255,0.3) 100%)`,
+              }%, rgba(255,255,255,0.4) 100%)`,
             }}
           />
         </div>
 
         {/* Control buttons */}
-        <div className="absolute bottom-0 left-0 right-0 px-4 py-3 flex items-center gap-4 pointer-events-auto z-10 bg-gradient-to-t from-black/90 to-transparent">
+        <div className="absolute bottom-0 left-0 right-0 px-4 py-2 flex items-center gap-4 pointer-events-auto">
           <button
             onClick={togglePlay}
             className="text-white hover:text-primary transition-colors"
