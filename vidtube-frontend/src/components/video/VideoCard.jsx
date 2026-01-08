@@ -54,6 +54,7 @@ export default function VideoCard({ video, showUnlike = false, onUnlike }) {
             alt={video.title}
             className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
             loading="lazy"
+            decoding="async"
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center bg-linear-to-br from-surface to-surface-light">
