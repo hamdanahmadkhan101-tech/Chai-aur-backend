@@ -7,6 +7,11 @@ import { logInfo, logError, logWarn } from '../utils/logger.js';
 export const requestLogger = (req, res, next) => {
   const startTime = Date.now();
 
+  // Skip logging OPTIONS requests in development (CORS preflight)
+  if (req.method === 'OPTIONS') {
+    return next();
+  }
+
   // Log request
   logInfo('Incoming request', {
     requestId: req.requestId,
