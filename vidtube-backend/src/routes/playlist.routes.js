@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import {
   createPlaylist,
+  getCurrentUserPlaylists,
   getUserPlaylists,
   getPlaylistById,
   updatePlaylist,
@@ -24,7 +25,7 @@ router.route('/:playlistId').get(getPlaylistById);
 // ============================================
 
 router.route('/').post(verifyJWT, createPlaylist);
-router.route('/user').get(verifyJWT, getUserPlaylists);
+router.route('/user').get(verifyJWT, getCurrentUserPlaylists);
 
 router
   .route('/:playlistId')

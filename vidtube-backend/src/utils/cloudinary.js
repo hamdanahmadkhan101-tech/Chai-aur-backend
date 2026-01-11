@@ -12,23 +12,18 @@ cloudinary.config({
 const uploadOnCloudinary = async (filePath) => {
   try {
     if (!filePath) {
-      console.error('No file path provided to uploadOnCloudinary');
       return null;
     }
 
     if (!fs.existsSync(filePath)) {
-      console.error(`File not found for upload: ${filePath}`);
       return null;
     }
 
-    console.log(`Starting Cloudinary upload for: ${filePath}`);
     const fileStats = fs.statSync(filePath);
     const fileSizeMB = fileStats.size / 1024 / 1024;
-    console.log(`File size: ${fileSizeMB.toFixed(2)}MB`);
     
     // Calculate timeout based on file size (1.2 seconds per MB, minimum 30s, maximum 10 minutes)
     const calculatedTimeout = Math.max(30000, Math.min(600000, fileSizeMB * 1200));
-    console.log(`Upload timeout set to: ${calculatedTimeout / 1000}s`);
     
     const uploadOptions = {
       resource_type: 'auto',
@@ -36,11 +31,6 @@ const uploadOnCloudinary = async (filePath) => {
       timeout: calculatedTimeout,
       chunk_size: 6000000, // 6MB chunks
     };
-    
-    // Use chunked upload for files larger than 50MB
-    if (fileSizeMB > 50) {
-      console.log('Using chunked upload for large file');
-    }
     
     const response = await cloudinary.uploader.upload(filePath, uploadOptions);
 
@@ -52,12 +42,10 @@ const uploadOnCloudinary = async (filePath) => {
       response.url = secureUrl;
     }
 
-    console.log('Cloudinary upload successful:', response.public_id, 'URL:', response.url);
     // Always delete temp file after successful upload
     deleteFile(filePath);
     return response;
   } catch (error) {
-    console.error('Cloudinary upload error:', error);
     // Always try to clean up temp file even on error
     deleteFile(filePath);
     
@@ -75,7 +63,7 @@ const uploadOnCloudinary = async (filePath) => {
       throw cloudinaryError;
     }
     
-    throw error; // Re-throw to let controller handle it
+    throw error;
   }
 };
 

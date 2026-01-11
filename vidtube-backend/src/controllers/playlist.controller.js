@@ -110,6 +110,28 @@ const createPlaylist = asyncHandler(async (req, res) => {
 });
 
 /**
+ * Get all playlists for current user
+ * @route GET /api/v1/playlists/user
+ * @access Private
+ */
+const getCurrentUserPlaylists = asyncHandler(async (req, res) => {
+  const playlists = await Playlist.find({ owner: req.user._id })
+    .populate({
+      path: 'owner',
+      select: 'username fullName avatarUrl',
+    })
+    .populate({
+      path: 'videos.video',
+      select: 'title thumbnailUrl duration',
+    })
+    .sort({ createdAt: -1 });
+
+  res.status(200).json(
+    new apiResponse(200, 'User playlists fetched successfully', playlists)
+  );
+});
+
+/**
  * Get all playlists for a user
  * @route GET /api/v1/playlists/user/:userId
  * @access Public (only public playlists), Private (all if owner)
@@ -360,6 +382,7 @@ const removeVideoFromPlaylist = asyncHandler(async (req, res) => {
 
 export {
   createPlaylist,
+  getCurrentUserPlaylists,
   getUserPlaylists,
   getPlaylistById,
   updatePlaylist,

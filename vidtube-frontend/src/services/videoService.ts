@@ -169,13 +169,10 @@ export const videoService = {
       if (data.tags) formData.append("tags", JSON.stringify(data.tags));
     }
 
-    console.log('Frontend: Starting upload...');
-    
     // Calculate timeout based on file size (same logic as backend)
     const videoFile = formData.get('video') as File;
-    const fileSizeMB = videoFile?.size ? videoFile.size / 1024 / 1024 : 25; // Default to 25MB if can't get size
+    const fileSizeMB = videoFile?.size ? videoFile.size / 1024 / 1024 : 25;
     const calculatedTimeout = Math.max(30000, Math.min(600000, fileSizeMB * 1200));
-    console.log(`Frontend timeout set to: ${calculatedTimeout / 1000}s for ${fileSizeMB.toFixed(2)}MB file`);
     
     const response = await apiClient.post<ApiResponse<any>>(
       "/videos/upload",
@@ -190,13 +187,11 @@ export const videoService = {
             const progress = Math.round(
               (progressEvent.loaded * 100) / progressEvent.total
             );
-            console.log('Upload progress:', progress + '%');
             onProgress(progress);
           }
         },
       }
     );
-    console.log('Frontend: Upload completed');
     return mapVideoResponse(response.data.data);
   },
 

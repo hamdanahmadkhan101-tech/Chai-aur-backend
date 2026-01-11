@@ -217,7 +217,6 @@ export const UploadPage: React.FC = () => {
                     className="w-full rounded-lg mb-2"
                     style={{ maxHeight: "300px" }}
                     onError={(e) => {
-                      console.error('Video preview error');
                       e.currentTarget.style.display = 'none';
                     }}
                   />

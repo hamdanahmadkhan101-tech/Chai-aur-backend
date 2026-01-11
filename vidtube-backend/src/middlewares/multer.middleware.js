@@ -6,7 +6,6 @@ import path from 'path';
 const tempDir = path.join(process.cwd(), 'public', 'temp');
 if (!fs.existsSync(tempDir)) {
   fs.mkdirSync(tempDir, { recursive: true });
-  console.log('Created temp directory:', tempDir);
 }
 
 const storage = multer.diskStorage({

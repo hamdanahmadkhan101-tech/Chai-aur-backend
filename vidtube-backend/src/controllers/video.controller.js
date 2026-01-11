@@ -83,11 +83,6 @@ const ownerLookupPipeline = [
  * @access Private
  */
 const uploadVideo = asyncHandler(async (req, res) => {
-  console.log('Upload started:', {
-    body: req.body,
-    files: req.files ? Object.keys(req.files) : 'no files'
-  });
-
   const { title, description = '', videoformat, duration } = req.body;
 
   // Validate required fields
@@ -120,8 +115,6 @@ const uploadVideo = asyncHandler(async (req, res) => {
   const videoPath = req.files?.video?.[0]?.path ?? null;
   const thumbnailPath = req.files?.thumbnail?.[0]?.path ?? null;
 
-  console.log('File paths:', { videoPath, thumbnailPath });
-
   if (!videoPath) {
     throw new ValidationError('Video file is required', [
       { field: 'video', message: 'Video file is required' },
@@ -129,11 +122,8 @@ const uploadVideo = asyncHandler(async (req, res) => {
   }
 
   try {
-    console.log('Starting Cloudinary upload...');
-    
     // Upload video to Cloudinary
     const videoUploadResult = await uploadOnCloudinary(videoPath);
-    console.log('Video upload result:', videoUploadResult ? 'success' : 'failed');
     
     if (!videoUploadResult?.url) {
       throw new apiError(500, 'Video upload to cloud storage failed');
@@ -144,7 +134,6 @@ const uploadVideo = asyncHandler(async (req, res) => {
       ? await uploadOnCloudinary(thumbnailPath)
       : null;
     
-    console.log('Creating video document...');
     const newVideo = await Video.create({
       title: validatedTitle,
       description: validatedDescription,
@@ -155,14 +144,12 @@ const uploadVideo = asyncHandler(async (req, res) => {
       owner: req.user._id,
     });
 
-    console.log('Video created, fetching with owner details...');
     // Return video with populated owner details
     const [createdVideo] = await Video.aggregate([
       { $match: { _id: new mongoose.Types.ObjectId(newVideo._id) } },
       ...ownerLookupPipeline,
     ]);
 
-    console.log('Upload completed successfully');
     res
       .status(201)
       .json(
@@ -173,9 +160,6 @@ const uploadVideo = asyncHandler(async (req, res) => {
         )
       );
   } catch (error) {
-    console.error('Upload error:', error);
-    
-    // Handle specific error types with user-friendly messages
     if (error.code === 'UPLOAD_TIMEOUT') {
       throw new apiError(408, error.message);
     }
