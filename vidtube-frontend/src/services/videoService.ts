@@ -97,6 +97,14 @@ export const videoService = {
     };
   },
 
+  // Get search suggestions
+  getSearchSuggestions: async (query: string): Promise<string[]> => {
+    const response = await apiClient.get<ApiResponse<string[]>>(
+      `/videos/suggestions?query=${encodeURIComponent(query)}`
+    );
+    return response.data.data || [];
+  },
+
   // Get user's videos
   getUserVideos: async (
     userId: string,

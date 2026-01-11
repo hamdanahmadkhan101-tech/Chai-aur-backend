@@ -164,7 +164,9 @@ export const ChannelPage: React.FC = () => {
                   </div>
                   <div className="flex items-center gap-2">
                     <VideoIcon className="w-4 h-4" />
-                    <span>{videos.length} videos</span>
+                    <span>
+                      {channelUser.videosCount?.toLocaleString() || 0} videos
+                    </span>
                   </div>
                   <div className="flex items-center gap-2">
                     <Calendar className="w-4 h-4" />

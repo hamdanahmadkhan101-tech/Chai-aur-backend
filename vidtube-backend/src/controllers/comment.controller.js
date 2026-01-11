@@ -338,6 +338,9 @@ const getVideoComments = asyncHandler(async (req, res) => {
         isLiked: {
           $in: [req.user?._id, '$commentLikes.likedBy'],
         },
+        isOwnComment: {
+          $eq: ['$owner._id', req.user?._id],
+        },
         // Calculate engagement score for 'top' sorting
         engagementScore: {
           $add: [
@@ -351,8 +354,8 @@ const getVideoComments = asyncHandler(async (req, res) => {
     {
       $sort:
         sortBy === 'top'
-          ? { engagementScore: -1, createdAt: -1 } // Top: by engagement, then by date
-          : { createdAt: -1 }, // Newest: by date only
+          ? { isOwnComment: -1, engagementScore: -1, createdAt: -1 } // Top: own comments first, then by engagement
+          : { isOwnComment: -1, createdAt: -1 }, // Newest: own comments first, then by date
     },
   ];
 

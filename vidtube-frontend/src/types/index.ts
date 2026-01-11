@@ -33,6 +33,7 @@ export interface User {
   bio?: string;
   subscribersCount?: number;
   subscribedToCount?: number;
+  videosCount?: number;
   isSubscribed?: boolean;
   socialLinks?: {
     twitter?: string;

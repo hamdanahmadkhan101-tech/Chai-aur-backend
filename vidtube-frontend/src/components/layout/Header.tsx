@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { useAuthStore } from "../../store/authStore";
 import { authService } from "../../services/authService";
+import { videoService } from "../../services/videoService";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { notificationService } from "../../services/notificationService.ts";
 import { NotificationDropdown } from "../notification/NotificationDropdown";
@@ -27,10 +28,14 @@ export const Header: React.FC = () => {
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
-  const userMenuRef = React.useRef<HTMLDivElement>(null);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [suggestions, setSuggestions] = useState<string[]>([]);
+  const userMenuRef = useRef<HTMLDivElement>(null);
+  const searchRef = useRef<HTMLDivElement>(null);
+  const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Close profile dropdown when clicking outside
-  React.useEffect(() => {
+  useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (
         userMenuRef.current &&
@@ -38,33 +43,87 @@ export const Header: React.FC = () => {
       ) {
         setShowUserMenu(false);
       }
+      // Close search suggestions when clicking outside
+      if (
+        searchRef.current &&
+        !searchRef.current.contains(event.target as Node)
+      ) {
+        setShowSuggestions(false);
+      }
     };
 
-    if (showUserMenu) {
+    if (showUserMenu || showSuggestions) {
       document.addEventListener("mousedown", handleClickOutside);
     }
 
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
-  }, [showUserMenu]);
+  }, [showUserMenu, showSuggestions]);
 
   // Close dropdowns when user logs out
-  React.useEffect(() => {
+  useEffect(() => {
     if (!isAuthenticated) {
       setShowUserMenu(false);
       setShowNotifications(false);
     }
   }, [isAuthenticated]);
 
+  // Fetch search suggestions with debouncing
+  const fetchSuggestions = useCallback(async (query: string) => {
+    if (!query.trim()) {
+      setSuggestions([]);
+      return;
+    }
+
+    try {
+      const results = await videoService.getSearchSuggestions(query);
+      setSuggestions(results);
+    } catch (error) {
+      console.error("Failed to fetch suggestions:", error);
+      setSuggestions([]);
+    }
+  }, []);
+
+  // Debounced search input handler
+  const handleSearchInput = (value: string) => {
+    setSearchQuery(value);
+
+    // Clear previous timer
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+    }
+
+    // Set new timer for debouncing (300ms delay)
+    debounceTimerRef.current = setTimeout(() => {
+      fetchSuggestions(value);
+    }, 300);
+  };
+
+  // Cleanup timer on unmount
+  useEffect(() => {
+    return () => {
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
+    };
+  }, []);
+
   // Fetch unread notification count with aggressive polling
-  const { data: unreadCount } = useQuery({
+  const { data: unreadCount, refetch: refetchNotifications } = useQuery({
     queryKey: ["unreadCount"],
     queryFn: notificationService.getUnreadCount,
     enabled: isAuthenticated,
-    refetchInterval: 15000, // Poll every 15 seconds for live updates
+    refetchInterval: 10000, // Poll every 10 seconds for live updates
     refetchIntervalInBackground: true, // Continue polling in background
   });
+
+  // Refetch notifications when navigating (on route change)
+  useEffect(() => {
+    if (isAuthenticated) {
+      refetchNotifications();
+    }
+  }, [isAuthenticated, refetchNotifications]);
 
   const logoutMutation = useMutation({
     mutationFn: authService.logout,
@@ -94,7 +153,14 @@ export const Header: React.FC = () => {
     if (searchQuery.trim()) {
       navigate(`/search?q=${encodeURIComponent(searchQuery)}`);
       setSearchQuery("");
+      setShowSuggestions(false);
     }
+  };
+
+  const handleSuggestionClick = (suggestion: string) => {
+    navigate(`/search?q=${encodeURIComponent(suggestion)}`);
+    setSearchQuery("");
+    setShowSuggestions(false);
   };
 
   return (
@@ -119,26 +185,52 @@ export const Header: React.FC = () => {
           </Link>
 
           {/* Search Bar */}
-          <form
-            onSubmit={handleSearch}
-            className="flex-1 max-w-2xl mx-2 sm:mx-4 lg:mx-8 hidden md:block"
+          <div
+            ref={searchRef}
+            className="flex-1 max-w-2xl mx-2 sm:mx-4 lg:mx-8 hidden md:block relative"
           >
-            <div className="relative">
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search videos..."
-                className="glass-input w-full pr-12"
-              />
-              <button
-                type="submit"
-                className="absolute right-2 top-1/2 -translate-y-1/2 p-2 text-text-tertiary hover:text-primary-500 transition-colors"
-              >
-                <Search className="w-5 h-5" />
-              </button>
-            </div>
-          </form>
+            <form onSubmit={handleSearch}>
+              <div className="relative">
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => handleSearchInput(e.target.value)}
+                  onFocus={() => setShowSuggestions(true)}
+                  placeholder="Search videos..."
+                  className="glass-input w-full pr-12"
+                />
+                <button
+                  type="submit"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 p-2 text-text-tertiary hover:text-primary-500 transition-colors"
+                >
+                  <Search className="w-5 h-5" />
+                </button>
+              </div>
+            </form>
+
+            {/* Search Suggestions Dropdown */}
+            <AnimatePresence>
+              {showSuggestions && suggestions.length > 0 && (
+                <motion.div
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  className="absolute top-full left-0 right-0 mt-2 bg-background-secondary backdrop-blur-xl rounded-xl border border-white/10 shadow-2xl overflow-hidden z-50"
+                >
+                  {suggestions.map((suggestion, index) => (
+                    <button
+                      key={index}
+                      onClick={() => handleSuggestionClick(suggestion)}
+                      className="w-full text-left px-4 py-3 text-text-primary hover:bg-surface-hover transition-colors flex items-center gap-3 cursor-pointer"
+                    >
+                      <Search className="w-4 h-4 text-text-tertiary flex-shrink-0" />
+                      <span className="truncate">{suggestion}</span>
+                    </button>
+                  ))}
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
 
           {/* Right Section */}
           <div className="flex items-center gap-2 sm:gap-4">

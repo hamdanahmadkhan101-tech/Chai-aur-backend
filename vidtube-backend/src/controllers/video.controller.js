@@ -43,10 +43,24 @@ const ownerLookupPipeline = [
       as: 'owner',
       pipeline: [
         {
+          $lookup: {
+            from: 'subscriptions',
+            localField: '_id',
+            foreignField: 'channel',
+            as: 'subscribers',
+          },
+        },
+        {
+          $addFields: {
+            subscribersCount: { $size: '$subscribers' },
+          },
+        },
+        {
           $project: {
             username: 1,
             fullName: 1,
             avatarUrl: 1,
+            subscribersCount: 1,
           },
         },
       ],
@@ -278,6 +292,26 @@ const getVideoById = asyncHandler(async (req, res) => {
         as: 'comments',
       },
     },
+    // Lookup subscriptions for checking if current user is subscribed
+    {
+      $lookup: {
+        from: 'subscriptions',
+        let: { ownerId: '$owner._id' },
+        pipeline: [
+          {
+            $match: {
+              $expr: {
+                $and: [
+                  { $eq: ['$channel', '$$ownerId'] },
+                  { $eq: ['$subscriber', currentUserId] },
+                ],
+              },
+            },
+          },
+        ],
+        as: 'subscriptionCheck',
+      },
+    },
   ];
 
   // Add engagement fields via aggregation
@@ -289,6 +323,7 @@ const getVideoById = asyncHandler(async (req, res) => {
         isLiked: {
           $in: [currentUserId, '$likes.likedBy'],
         },
+        'owner.isSubscribed': { $gt: [{ $size: '$subscriptionCheck' }, 0] },
       },
     });
   } else {
@@ -297,6 +332,7 @@ const getVideoById = asyncHandler(async (req, res) => {
         likesCount: { $size: '$likes' },
         commentsCount: { $size: '$comments' },
         isLiked: false,
+        'owner.isSubscribed': false,
       },
     });
   }
@@ -305,6 +341,7 @@ const getVideoById = asyncHandler(async (req, res) => {
     $project: {
       likes: 0,
       comments: 0,
+      subscriptionCheck: 0,
     },
   });
 
@@ -511,19 +548,60 @@ const searchVideos = asyncHandler(async (req, res) => {
   const { page, limit } = getPaginationParams(req.query);
   const searchQuery = query.trim();
 
-  // Use regex for case-insensitive search (text index can be used in future optimization)
+  // Escape special regex characters for safe search
+  const escapedQuery = searchQuery.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+  // Use text search with scoring for better relevance
   const matchStage = {
     isPublished: true,
     $or: [
-      { title: { $regex: searchQuery, $options: 'i' } },
-      { description: { $regex: searchQuery, $options: 'i' } },
+      { title: { $regex: escapedQuery, $options: 'i' } },
+      { description: { $regex: escapedQuery, $options: 'i' } },
     ],
   };
 
   const pipeline = [
     { $match: matchStage },
     ...ownerLookupPipeline,
-    { $sort: { createdAt: -1 } },
+    // Add relevance score: title match scores higher than description
+    {
+      $addFields: {
+        relevanceScore: {
+          $add: [
+            {
+              $cond: {
+                if: {
+                  $regexMatch: {
+                    input: '$title',
+                    regex: escapedQuery,
+                    options: 'i',
+                  },
+                },
+                then: 10,
+                else: 0,
+              },
+            },
+            {
+              $cond: {
+                if: {
+                  $regexMatch: {
+                    input: '$description',
+                    regex: escapedQuery,
+                    options: 'i',
+                  },
+                },
+                then: 5,
+                else: 0,
+              },
+            },
+            // Boost recent and popular videos
+            { $multiply: ['$views', 0.001] },
+            { $multiply: ['$likes', 0.01] },
+          ],
+        },
+      },
+    },
+    { $sort: { relevanceScore: -1, createdAt: -1 } },
   ];
 
   const aggregate = Video.aggregate(pipeline);
@@ -540,6 +618,56 @@ const searchVideos = asyncHandler(async (req, res) => {
   });
 
   res.status(200).json(response);
+});
+
+/**
+ * Get search suggestions
+ * @route GET /api/v1/videos/suggestions
+ * @access Public
+ */
+const getSearchSuggestions = asyncHandler(async (req, res) => {
+  const { query } = req.query;
+
+  if (!query || !query.trim()) {
+    // Return popular search terms/topics
+    const suggestions = [
+      'gaming',
+      'music',
+      'tutorial',
+      'vlog',
+      'cooking',
+      'travel',
+      'technology',
+      'sports',
+      'comedy',
+      'education',
+    ];
+    return res
+      .status(200)
+      .json(new apiResponse(200, 'Default suggestions', suggestions));
+  }
+
+  const searchQuery = query.trim();
+  const escapedQuery = searchQuery.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const limit = 10;
+
+  // Get matching video titles
+  const videos = await Video.find({
+    isPublished: true,
+    title: { $regex: escapedQuery, $options: 'i' },
+  })
+    .select('title')
+    .limit(limit)
+    .lean();
+
+  // Extract unique suggestions
+  const suggestions = [...new Set(videos.map((v) => v.title))];
+
+  res
+    .status(200)
+    .json(
+      new apiResponse(200, 'Suggestions fetched successfully', suggestions)
+    );
 });
 
 /**
@@ -658,6 +786,7 @@ export {
 
   // Video Discovery
   searchVideos,
+  getSearchSuggestions,
   getVideosByOwner,
 
   // Video Interactions

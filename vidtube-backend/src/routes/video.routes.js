@@ -12,12 +12,16 @@ import {
 
   // Video Discovery
   searchVideos,
+  getSearchSuggestions,
   getVideosByOwner,
 
   // Video Interactions
   addVideoToWatchHistory,
 } from '../controllers/video.controller.js';
-import { uploadVideo as uploadVideoMiddleware, uploadImage } from '../middlewares/multer.middleware.js';
+import {
+  uploadVideo as uploadVideoMiddleware,
+  uploadImage,
+} from '../middlewares/multer.middleware.js';
 import { verifyJWT } from '../middlewares/auth.middleware.js';
 
 const router = Router();
@@ -28,6 +32,7 @@ const router = Router();
 
 router.route('/').get(getAllVideos);
 router.route('/search').get(searchVideos);
+router.route('/suggestions').get(getSearchSuggestions);
 router.route('/user/:userId').get(getVideosByOwner);
 router.route('/:videoId').get(getVideoById);
 
@@ -35,20 +40,16 @@ router.route('/:videoId').get(getVideoById);
 // PROTECTED ROUTES
 // ============================================
 
-router
-  .route('/upload')
-  .post(
-    verifyJWT,
-    uploadVideoMiddleware.fields([
-      { name: 'video', maxCount: 1 },
-      { name: 'thumbnail', maxCount: 1 },
-    ]),
-    uploadVideo
-  );
+router.route('/upload').post(
+  verifyJWT,
+  uploadVideoMiddleware.fields([
+    { name: 'video', maxCount: 1 },
+    { name: 'thumbnail', maxCount: 1 },
+  ]),
+  uploadVideo
+);
 
-router
-  .route('/toggle/publish/:videoId')
-  .patch(verifyJWT, togglePublishStatus);
+router.route('/toggle/publish/:videoId').patch(verifyJWT, togglePublishStatus);
 
 router
   .route('/:videoId')
@@ -62,5 +63,3 @@ router
 router.route('/:videoId/watch').post(verifyJWT, addVideoToWatchHistory);
 
 export default router;
-
-

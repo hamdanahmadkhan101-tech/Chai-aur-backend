@@ -193,7 +193,7 @@ const createReport = asyncHandler(async (req, res) => {
     console.error('Failed to create report notification:', notifError);
   }
 
-  const response = apiResponse(201, 'Report created successfully', report);
+  const response = new apiResponse(201, 'Report created successfully', report);
 
   res.status(201).json(response);
 });
@@ -231,7 +231,7 @@ const getAllReports = asyncHandler(async (req, res) => {
   const reports = await Report.aggregate(pipeline);
   const totalCount = await Report.countDocuments(matchStage);
 
-  const response = apiResponse(200, 'Reports fetched successfully', {
+  const response = new apiResponse(200, 'Reports fetched successfully', {
     reports,
     pagination: {
       page,
@@ -264,7 +264,7 @@ const getReportById = asyncHandler(async (req, res) => {
     throw new NotFoundError('Report not found');
   }
 
-  const response = apiResponse(200, 'Report fetched successfully', report);
+  const response = new apiResponse(200, 'Report fetched successfully', report);
 
   res.status(200).json(response);
 });
@@ -306,7 +306,7 @@ const updateReportStatus = asyncHandler(async (req, res) => {
 
   await report.save();
 
-  const response = apiResponse(
+  const response = new apiResponse(
     200,
     'Report status updated successfully',
     report
@@ -332,7 +332,7 @@ const deleteReport = asyncHandler(async (req, res) => {
 
   await Report.deleteOne({ _id: reportId });
 
-  const response = apiResponse(200, 'Report deleted successfully', null);
+  const response = new apiResponse(200, 'Report deleted successfully', null);
 
   res.status(200).json(response);
 });
@@ -353,7 +353,7 @@ const getMyReports = asyncHandler(async (req, res) => {
 
   const totalCount = await Report.countDocuments({ reportedBy: req.user._id });
 
-  const response = apiResponse(200, 'Your reports fetched successfully', {
+  const response = new apiResponse(200, 'Your reports fetched successfully', {
     reports,
     pagination: {
       page,
