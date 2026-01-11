@@ -73,23 +73,20 @@ const registerUser = asyncHandler(async (req, res) => {
   const coverPath = req.files?.coverImage?.[0]?.path ?? null;
   // console.log(req.files);
 
-  if (!avatarPath) {
-    throw new apiError(400, 'Avatar image is required');
-  }
-
-  const avatarUploadResult = await uploadOnCloudinary(avatarPath);
-  const coverUploadResult = await uploadOnCloudinary(coverPath);
-
-  if (!avatarUploadResult) {
-    throw new apiError(500, 'Avatar upload failed');
-  }
+  // Avatar is now optional - upload only if provided
+  const avatarUploadResult = avatarPath
+    ? await uploadOnCloudinary(avatarPath)
+    : null;
+  const coverUploadResult = coverPath
+    ? await uploadOnCloudinary(coverPath)
+    : null;
 
   const newUser = await User.create({
     fullName,
     username: username.toLowerCase(),
     email,
     password,
-    avatarUrl: avatarUploadResult.url,
+    avatarUrl: avatarUploadResult?.url || null,
     coverUrl: coverUploadResult?.url || null,
   });
 
@@ -313,7 +310,7 @@ const getCurrentUserProfile = asyncHandler(async (req, res) => {
  * @access Private
  */
 const updateUserProfile = asyncHandler(async (req, res) => {
-  const { fullName, email, username } = req.body;
+  const { fullName, email, username, bio } = req.body;
 
   // If username is being changed, check if new username is taken
   if (username && username !== req.user.username) {
@@ -339,6 +336,7 @@ const updateUserProfile = asyncHandler(async (req, res) => {
         ...(fullName && { fullName }),
         ...(email && { email }),
         ...(username && { username: username.toLowerCase() }),
+        ...(bio !== undefined && { bio }), // Allow empty string for bio
       },
     },
     { new: true, runValidators: true }

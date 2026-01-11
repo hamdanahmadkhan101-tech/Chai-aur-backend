@@ -41,17 +41,7 @@ const allowedOrigins = [
 // Security: Request ID for tracing (must be first)
 app.use(requestIdMiddleware);
 
-// Security headers (must be early in middleware chain)
-app.use(securityMiddleware);
-app.use(securityHeaders);
-
-// Apply general API rate limiting
-app.use('/api/', apiLimiter);
-
-// Request logging (after security middleware)
-app.use(requestLogger);
-
-// CORS Configuration
+// CORS Configuration (MUST be before security middleware and rate limiting)
 app.use(
   cors({
     origin: function (origin, callback) {
@@ -70,6 +60,16 @@ app.use(
     exposedHeaders: ['X-Request-Id'],
   })
 );
+
+// Security headers (after CORS)
+app.use(securityMiddleware);
+app.use(securityHeaders);
+
+// Apply general API rate limiting (after CORS)
+app.use('/api/', apiLimiter);
+
+// Request logging (after security middleware)
+app.use(requestLogger);
 
 // Body parsing middleware
 app.use(express.urlencoded({ extended: true, limit: '16kb' }));

@@ -1,0 +1,410 @@
+import React, { useState } from "react";
+import { useParams, Link } from "react-router-dom";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { motion } from "framer-motion";
+import {
+  ThumbsUp,
+  Share2,
+  Download,
+  Flag,
+  Eye,
+  Calendar,
+  Tag,
+  ChevronDown,
+  ChevronUp,
+} from "lucide-react";
+import { VideoPlayer } from "../components/video/VideoPlayer";
+import { VideoCard } from "../components/video/VideoCard";
+import { CommentSection } from "../components/comment/CommentSection";
+import { VideoPageSkeleton } from "../components/ui/Skeleton";
+import { videoService } from "../services/videoService";
+import { commentService } from "../services/commentService";
+import { subscriptionService } from "../services/subscriptionService";
+import { useAuthStore } from "../store/authStore";
+import { formatViewCount, formatRelativeTime, cn } from "../utils/helpers";
+import toast from "react-hot-toast";
+import type { Video } from "../types";
+
+export const VideoPlayerPage: React.FC = () => {
+  const { videoId } = useParams<{ videoId: string }>();
+  const { user, isAuthenticated } = useAuthStore();
+  const queryClient = useQueryClient();
+
+  const [showFullDescription, setShowFullDescription] = useState(false);
+  const [commentPage, setCommentPage] = useState(1);
+
+  // Fetch video data
+  const {
+    data: video,
+    isLoading: videoLoading,
+    error: videoError,
+  } = useQuery({
+    queryKey: ["video", videoId],
+    queryFn: () => videoService.getVideoById(videoId!),
+    enabled: !!videoId,
+  });
+
+  // Fetch related videos
+  const { data: relatedVideos } = useQuery({
+    queryKey: ["related-videos", video?.category],
+    queryFn: () =>
+      videoService.getVideos({ category: video?.category, limit: 10 }),
+    enabled: !!video?.category,
+  });
+
+  // Fetch comments
+  const { data: commentsData, isLoading: commentsLoading } = useQuery({
+    queryKey: ["comments", videoId, commentPage],
+    queryFn: () => commentService.getVideoComments(videoId!, commentPage, 20),
+    enabled: !!videoId,
+  });
+
+  // Like video mutation
+  const likeMutation = useMutation({
+    mutationFn: () => videoService.toggleLike(videoId!),
+    onSuccess: (data) => {
+      queryClient.setQueryData(["video", videoId], (old: Video) => ({
+        ...old,
+        isLiked: data.isLiked,
+        likes: data.likesCount,
+      }));
+    },
+  });
+
+  // Subscribe mutation
+  const subscribeMutation = useMutation({
+    mutationFn: () => subscriptionService.toggleSubscription(video!.owner._id),
+    onSuccess: (data) => {
+      queryClient.setQueryData(["video", videoId], (old: Video) => ({
+        ...old,
+        owner: {
+          ...old.owner,
+          isSubscribed: data.isSubscribed,
+          subscribersCount: data.subscribersCount,
+        },
+      }));
+      toast.success(data.isSubscribed ? "Subscribed!" : "Unsubscribed");
+    },
+  });
+
+  // Comment mutations
+  const addCommentMutation = useMutation({
+    mutationFn: (content: string) =>
+      commentService.createComment(videoId!, content),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["comments", videoId] });
+      toast.success("Comment added!");
+    },
+  });
+
+  const likeCommentMutation = useMutation({
+    mutationFn: (commentId: string) => commentService.toggleLike(commentId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["comments", videoId] });
+    },
+  });
+
+  const editCommentMutation = useMutation({
+    mutationFn: ({
+      commentId,
+      content,
+    }: {
+      commentId: string;
+      content: string;
+    }) => commentService.updateComment(commentId, content),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["comments", videoId] });
+      toast.success("Comment updated!");
+    },
+  });
+
+  const deleteCommentMutation = useMutation({
+    mutationFn: (commentId: string) => commentService.deleteComment(commentId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["comments", videoId] });
+      toast.success("Comment deleted!");
+    },
+  });
+
+  const handleShare = async () => {
+    try {
+      await navigator.share({
+        title: video?.title,
+        url: window.location.href,
+      });
+    } catch (error) {
+      // Fallback: Copy to clipboard
+      navigator.clipboard.writeText(window.location.href);
+      toast.success("Link copied to clipboard!");
+    }
+  };
+
+  if (videoLoading || !video) {
+    return (
+      <div className="container mx-auto px-4 py-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2">
+            <VideoPageSkeleton />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (videoError) {
+    return (
+      <div className="container mx-auto px-4 py-6">
+        <div className="glass-card p-8 text-center">
+          <h2 className="text-2xl font-bold text-text-primary mb-4">
+            Video Not Found
+          </h2>
+          <p className="text-text-secondary mb-6">
+            The video you're looking for doesn't exist or has been removed.
+          </p>
+          <Link to="/" className="btn-primary">
+            Go Home
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="container mx-auto px-2 sm:px-4 py-2 sm:py-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 sm:gap-6">
+        {/* Main Content */}
+        <div className="lg:col-span-2 space-y-3 sm:space-y-6">
+          {/* Video Player */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+          >
+            {video.videoUrl ? (
+              <VideoPlayer
+                videoUrl={video.videoUrl}
+                thumbnailUrl={video.thumbnailUrl}
+              />
+            ) : (
+              <div className="glass-card aspect-video flex items-center justify-center">
+                <p className="text-text-secondary">
+                  Video source not available
+                </p>
+              </div>
+            )}
+          </motion.div>
+
+          {/* Video Info */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            className="space-y-3 sm:space-y-4"
+          >
+            {/* Title */}
+            <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-text-primary">
+              {video.title}
+            </h1>
+
+            {/* Stats & Actions */}
+            <div className="flex flex-col sm:flex-row sm:flex-wrap items-start sm:items-center justify-between gap-3 sm:gap-4">
+              {/* Stats */}
+              <div className="flex items-center gap-3 sm:gap-4 text-text-secondary text-xs sm:text-sm">
+                <div className="flex items-center gap-1">
+                  <Eye className="w-3 h-3 sm:w-4 sm:h-4" />
+                  <span>{formatViewCount(video.views || 0)} views</span>
+                </div>
+                <span>•</span>
+                <div className="flex items-center gap-1">
+                  <Calendar className="w-3 h-3 sm:w-4 sm:h-4" />
+                  <span>{formatRelativeTime(video.createdAt)}</span>
+                </div>
+              </div>
+
+              {/* Actions */}
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => likeMutation.mutate()}
+                  disabled={!isAuthenticated}
+                  className={cn(
+                    "flex items-center gap-2 px-4 py-2 rounded-xl font-medium transition-all",
+                    video.isLiked
+                      ? "bg-primary-500 text-white shadow-glow"
+                      : "glass-card hover:bg-surface-hover text-text-primary"
+                  )}
+                >
+                  <ThumbsUp
+                    className="w-5 h-5"
+                    fill={video.isLiked ? "currentColor" : "none"}
+                  />
+                  <span>{formatViewCount(video.likes || 0)}</span>
+                </button>
+
+                <button
+                  onClick={handleShare}
+                  className="glass-card hover:bg-surface-hover px-4 py-2 rounded-xl flex items-center gap-2 text-text-primary font-medium transition-all"
+                >
+                  <Share2 className="w-5 h-5" />
+                  Share
+                </button>
+
+                <button className="glass-card hover:bg-surface-hover px-4 py-2 rounded-xl flex items-center gap-2 text-text-primary font-medium transition-all">
+                  <Download className="w-5 h-5" />
+                </button>
+
+                <button className="glass-card hover:bg-surface-hover p-2 rounded-xl text-text-primary transition-all">
+                  <Flag className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+          </motion.div>
+
+          {/* Channel Info */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+            className="glass-card p-3 sm:p-6"
+          >
+            <div className="flex items-start justify-between gap-3 sm:gap-4 flex-wrap sm:flex-nowrap">
+              <Link
+                to={`/channel/${video.owner.username}`}
+                className="flex items-center gap-4 flex-1"
+              >
+                <img
+                  src={
+                    video.owner.avatarUrl ||
+                    video.owner.avatar ||
+                    "/default-avatar.jpg"
+                  }
+                  alt={video.owner.username}
+                  className="w-12 h-12 rounded-full object-cover ring-2 ring-primary-500/20 hover:ring-primary-500/50 transition-all"
+                />
+                <div>
+                  <h3 className="text-text-primary font-semibold hover:text-primary-500 transition-colors">
+                    {video.owner.fullName}
+                  </h3>
+                  <p className="text-text-tertiary text-sm">
+                    {formatViewCount(video.owner.subscribersCount || 0)}{" "}
+                    subscribers
+                  </p>
+                </div>
+              </Link>
+
+              {isAuthenticated && user?._id !== video.owner._id && (
+                <button
+                  onClick={() => subscribeMutation.mutate()}
+                  className={cn(
+                    "px-6 py-2 rounded-xl font-medium transition-all",
+                    video.owner.isSubscribed
+                      ? "glass-card hover:bg-surface-hover text-text-primary"
+                      : "bg-primary-500 hover:bg-primary-600 text-white shadow-glow"
+                  )}
+                >
+                  {video.owner.isSubscribed ? "Subscribed" : "Subscribe"}
+                </button>
+              )}
+            </div>
+
+            {/* Description */}
+            {video.description && (
+              <div className="mt-4">
+                <div
+                  className={cn(
+                    "text-text-secondary text-sm whitespace-pre-wrap",
+                    !showFullDescription && "line-clamp-3"
+                  )}
+                >
+                  {video.description}
+                </div>
+                {video.description.length > 200 && (
+                  <button
+                    onClick={() => setShowFullDescription(!showFullDescription)}
+                    className="mt-2 text-text-primary hover:text-primary-500 transition-colors flex items-center gap-1 text-sm font-medium"
+                  >
+                    {showFullDescription ? (
+                      <>
+                        Show Less <ChevronUp className="w-4 h-4" />
+                      </>
+                    ) : (
+                      <>
+                        Show More <ChevronDown className="w-4 h-4" />
+                      </>
+                    )}
+                  </button>
+                )}
+
+                {/* Tags */}
+                {video.tags && video.tags.length > 0 && (
+                  <div className="flex flex-wrap gap-2 mt-4">
+                    {video.tags.map((tag) => (
+                      <span
+                        key={tag}
+                        className="flex items-center gap-1 px-3 py-1 bg-surface rounded-full text-xs text-text-secondary"
+                      >
+                        <Tag className="w-3 h-3" />
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </motion.div>
+
+          {/* Comments Section */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 }}
+          >
+            <CommentSection
+              videoId={videoId!}
+              comments={commentsData?.docs || []}
+              totalComments={commentsData?.pagination.totalDocs || 0}
+              isLoading={commentsLoading}
+              hasMore={commentsData?.pagination.hasNextPage}
+              onLoadMore={() => setCommentPage((p) => p + 1)}
+              onAddComment={(content) => addCommentMutation.mutate(content)}
+              onLikeComment={(commentId) =>
+                likeCommentMutation.mutate(commentId)
+              }
+              onReplyComment={(_commentId, content) =>
+                addCommentMutation.mutate(content)
+              }
+              onEditComment={(commentId, content) =>
+                editCommentMutation.mutate({ commentId, content })
+              }
+              onDeleteComment={(commentId) =>
+                deleteCommentMutation.mutate(commentId)
+              }
+            />
+          </motion.div>
+        </div>
+
+        {/* Sidebar - Up Next */}
+        <div className="lg:col-span-1">
+          <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.2 }}
+            className="sticky top-6 space-y-4"
+          >
+            <h2 className="text-xl font-bold text-text-primary">Up Next</h2>
+
+            <div className="space-y-4">
+              {relatedVideos?.docs.map((relatedVideo) => (
+                <VideoCard
+                  key={relatedVideo._id}
+                  video={relatedVideo}
+                  showChannel={true}
+                />
+              ))}
+            </div>
+          </motion.div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default VideoPlayerPage;
