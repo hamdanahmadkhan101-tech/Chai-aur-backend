@@ -130,6 +130,7 @@ const uploadVideo = asyncHandler(async (req, res) => {
 
   try {
     console.log('Starting Cloudinary upload...');
+    
     // Upload video to Cloudinary
     const videoUploadResult = await uploadOnCloudinary(videoPath);
     console.log('Video upload result:', videoUploadResult ? 'success' : 'failed');

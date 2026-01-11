@@ -68,6 +68,13 @@ app.use(securityHeaders);
 // Apply general API rate limiting (after CORS)
 app.use('/api/', apiLimiter);
 
+// Increase timeout for upload routes
+app.use('/api/v1/videos/upload', (req, res, next) => {
+  req.setTimeout(600000); // 10 minutes
+  res.setTimeout(600000); // 10 minutes
+  next();
+});
+
 // Request logging (after security middleware)
 app.use(requestLogger);
 

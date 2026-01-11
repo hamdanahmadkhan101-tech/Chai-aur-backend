@@ -22,11 +22,28 @@ const uploadOnCloudinary = async (filePath) => {
     }
 
     console.log(`Starting Cloudinary upload for: ${filePath}`);
-    const response = await cloudinary.uploader.upload(filePath, {
+    const fileStats = fs.statSync(filePath);
+    console.log(`File size: ${(fileStats.size / 1024 / 1024).toFixed(2)}MB`);
+    
+    const uploadOptions = {
       resource_type: 'auto',
       secure: true,
-      timeout: 300000, // 5 minutes timeout
-    });
+      timeout: 600000, // 10 minutes
+      chunk_size: 6000000, // 6MB chunks for large files
+    };
+    
+    // Use chunked upload for files larger than 100MB
+    if (fileStats.size > 100 * 1024 * 1024) {
+      uploadOptions.upload_preset = undefined; // Remove if set
+      console.log('Using chunked upload for large file');
+    }
+    
+    const response = await cloudinary.uploader.upload(filePath, uploadOptions);
+
+    // Force HTTPS URL
+    if (response.secure_url) {
+      response.url = response.secure_url;
+    }
 
     console.log('Cloudinary upload successful:', response.public_id);
     // Always delete temp file after successful upload
