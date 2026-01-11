@@ -695,6 +695,24 @@ const getVideosByOwner = asyncHandler(async (req, res) => {
   const pipeline = [
     { $match: matchStage },
     ...ownerLookupPipeline,
+    {
+      $lookup: {
+        from: 'likes',
+        localField: '_id',
+        foreignField: 'video',
+        as: 'videoLikes',
+      },
+    },
+    {
+      $addFields: {
+        likesCount: { $size: '$videoLikes' },
+      },
+    },
+    {
+      $project: {
+        videoLikes: 0, // Remove the array after counting
+      },
+    },
     { $sort: { createdAt: -1 } },
   ];
 

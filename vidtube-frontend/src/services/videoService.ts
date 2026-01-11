@@ -118,16 +118,26 @@ export const videoService = {
       `/videos/user/${userId}?page=${page}&limit=${limit}`
     );
 
-    const data = response.data.data || {};
+    // Backend returns data in response.data (docs array) and meta.pagination
+    const docs = (response.data.data || []).map(mapVideoResponse);
+    const pagination = (response.data as any).meta?.pagination || {
+      page: 1,
+      limit: 20,
+      totalDocs: 0,
+      totalPages: 0,
+      hasNextPage: false,
+      hasPrevPage: false,
+    };
+
     return {
-      docs: (data.docs || []).map(mapVideoResponse),
-      pagination: data.pagination || {
-        page: 1,
-        limit: 20,
-        totalDocs: 0,
-        totalPages: 0,
-        hasNextPage: false,
-        hasPrevPage: false,
+      docs,
+      pagination: {
+        page: pagination.page || 1,
+        limit: pagination.limit || 20,
+        totalDocs: pagination.total || 0,
+        totalPages: pagination.totalPages || 0,
+        hasNextPage: pagination.hasNextPage || false,
+        hasPrevPage: pagination.hasPrevPage || false,
       },
     };
   },

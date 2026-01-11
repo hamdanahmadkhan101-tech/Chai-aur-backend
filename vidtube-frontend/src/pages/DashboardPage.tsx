@@ -32,10 +32,16 @@ export const DashboardPage: React.FC = () => {
   });
 
   // Fetch user's own videos
-  const { data: videosData, isLoading } = useQuery({
+  const {
+    data: videosData,
+    isLoading,
+    error,
+  } = useQuery({
     queryKey: ["myVideos", user?._id],
     queryFn: async () => {
+      console.log("Fetching videos for user:", user?._id);
       if (!user?._id) {
+        console.log("No user ID, returning empty");
         return {
           docs: [],
           pagination: {
@@ -48,9 +54,18 @@ export const DashboardPage: React.FC = () => {
           },
         };
       }
-      return await videoService.getUserVideos(user._id, 1, 50);
+      try {
+        const result = await videoService.getUserVideos(user._id, 1, 50);
+        console.log("Got videos:", result);
+        return result;
+      } catch (err) {
+        console.error("Error fetching videos:", err);
+        throw err;
+      }
     },
     enabled: !!user?._id,
+    staleTime: 0,
+    gcTime: 0,
   });
 
   const videos = videosData?.docs || [];
@@ -60,6 +75,19 @@ export const DashboardPage: React.FC = () => {
   // Use fresh subscriber count from profile query, fallback to auth store
   const subscribersCount =
     currentUserProfile?.subscribersCount ?? user?.subscribersCount ?? 0;
+
+  // Debug logging
+  console.log("Videos Data:", videosData);
+  console.log("Videos Array:", videos);
+  if (videos.length > 0) {
+    console.log("First video:", videos[0]);
+    console.log("First video likes field:", videos[0].likes);
+    console.log("First video likesCount field:", (videos[0] as any).likesCount);
+  }
+  console.log("Total Videos:", totalVideos);
+  console.log("Total Views:", totalViews);
+  console.log("Total Likes:", totalLikes);
+  console.log("Query Error:", error);
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -76,6 +104,13 @@ export const DashboardPage: React.FC = () => {
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          {error && (
+            <div className="col-span-full glass-card p-4 bg-red-500/10 border border-red-500/30 rounded-xl">
+              <p className="text-red-400 text-sm">
+                Error loading videos: {String(error)}
+              </p>
+            </div>
+          )}
           <div className="glass-card p-6">
             <div className="flex items-center justify-between mb-4">
               <div className="p-3 bg-primary-500/20 rounded-xl">
@@ -85,7 +120,7 @@ export const DashboardPage: React.FC = () => {
             </div>
             <p className="text-text-secondary text-sm mb-1">Total Videos</p>
             <p className="text-3xl font-bold text-text-primary">
-              {totalVideos}
+              {isLoading ? "..." : totalVideos}
             </p>
           </div>
 
@@ -98,7 +133,7 @@ export const DashboardPage: React.FC = () => {
             </div>
             <p className="text-text-secondary text-sm mb-1">Total Views</p>
             <p className="text-3xl font-bold text-text-primary">
-              {formatViewCount(totalViews)}
+              {isLoading ? "..." : formatViewCount(totalViews)}
             </p>
           </div>
 
@@ -111,7 +146,7 @@ export const DashboardPage: React.FC = () => {
             </div>
             <p className="text-text-secondary text-sm mb-1">Total Likes</p>
             <p className="text-3xl font-bold text-text-primary">
-              {formatViewCount(totalLikes)}
+              {isLoading ? "..." : formatViewCount(totalLikes)}
             </p>
           </div>
 
