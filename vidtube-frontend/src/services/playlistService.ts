@@ -3,21 +3,21 @@ import type { ApiResponse, PaginatedResponse, Playlist, Video } from '../types';
 
 export const playlistService = {
   // Create playlist
-  createPlaylist: async (data: { name: string; description?: string; isPublic?: boolean }): Promise<Playlist> => {
-    const response = await apiClient.post<ApiResponse<{ playlist: Playlist }>>('/playlists', data);
-    return response.data.data!.playlist;
+  createPlaylist: async (data: { name: string; description?: string; privacy?: "public" | "private" }): Promise<Playlist> => {
+    const response = await apiClient.post<ApiResponse<Playlist>>('/playlists', data);
+    return response.data.data!;
   },
 
   // Get user playlists
-  getUserPlaylists: async (userId: string, params?: { page?: number; limit?: number }): Promise<PaginatedResponse<Playlist>> => {
-    const response = await apiClient.get<ApiResponse<PaginatedResponse<Playlist>>>(`/playlists/user/${userId}`, { params });
-    return response.data.data!;
+  getUserPlaylists: async (): Promise<Playlist[]> => {
+    const response = await apiClient.get<ApiResponse<Playlist[]>>('/playlists/user');
+    return response.data.data || [];
   },
 
   // Get playlist by ID
   getPlaylistById: async (playlistId: string): Promise<Playlist> => {
-    const response = await apiClient.get<ApiResponse<{ playlist: Playlist }>>(`/playlists/${playlistId}`);
-    return response.data.data!.playlist;
+    const response = await apiClient.get<ApiResponse<Playlist>>(`/playlists/${playlistId}`);
+    return response.data.data!;
   },
 
   // Update playlist
