@@ -204,7 +204,75 @@ const getLikedVideos = asyncHandler(async (req, res) => {
 });
 
 // ============================================
+// COMMENT LIKE MANAGEMENT
+// ============================================
+
+/**
+ * Toggle like status for a comment
+ * @route POST /api/v1/likes/toggle/c/:commentId
+ * @access Private
+ */
+const toggleCommentLike = asyncHandler(async (req, res) => {
+  const { commentId } = req.params;
+  validateObjectId(commentId, 'commentId');
+
+  const Comment = (await import('../models/comment.model.js')).default;
+  const comment = await Comment.findById(commentId);
+  if (!comment) {
+    throw new apiError(404, 'Comment not found');
+  }
+
+  const existingLike = await Like.findOne({
+    comment: commentId,
+    likedBy: req.user._id,
+  });
+
+  let isLiked = false;
+
+  if (existingLike) {
+    await Like.deleteOne({ _id: existingLike._id });
+    isLiked = false;
+  } else {
+    try {
+      await Like.create({
+        comment: commentId,
+        likedBy: req.user._id,
+      });
+      isLiked = true;
+    } catch (error) {
+      if (error.code === 11000) {
+        isLiked = true;
+      } else {
+        throw error;
+      }
+    }
+  }
+
+  // Get total likes count
+  const likesCountResult = await Like.aggregate([
+    {
+      $match: {
+        comment: new mongoose.Types.ObjectId(commentId),
+      },
+    },
+    {
+      $count: 'count',
+    },
+  ]);
+
+  const likesCount = likesCountResult[0]?.count || 0;
+
+  res.status(200).json(
+    new apiResponse(200, 'Comment like status updated', {
+      commentId,
+      isLiked,
+      likesCount,
+    })
+  );
+});
+
+// ============================================
 // EXPORTS
 // ============================================
 
-export { toggleVideoLike, getLikedVideos };
+export { toggleVideoLike, toggleCommentLike, getLikedVideos };

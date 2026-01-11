@@ -63,7 +63,7 @@ export const commentService = {
   ): Promise<{ isLiked: boolean; likesCount: number }> => {
     const response = await apiClient.post<
       ApiResponse<{ isLiked: boolean; likesCount: number }>
-    >(`/likes/comment/${commentId}`);
+    >(`/likes/toggle/c/${commentId}`);
     return response.data.data!;
   },
 

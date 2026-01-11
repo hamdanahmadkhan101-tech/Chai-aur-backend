@@ -51,11 +51,15 @@ export const SettingsPage: React.FC = () => {
 
   const changePasswordMutation = useMutation({
     mutationFn: () => authService.changePassword(oldPassword, newPassword),
-    onSuccess: () => {
-      toast.success("Password changed successfully!");
+    onSuccess: async () => {
+      toast.success("Password changed successfully! Please login again.");
       setOldPassword("");
       setNewPassword("");
       setConfirmPassword("");
+      // Logout user and redirect to login
+      await authService.logout();
+      setUser(null);
+      navigate("/login");
     },
     onError: (error) => {
       toast.error(handleApiError(error));
