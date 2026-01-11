@@ -1,4 +1,5 @@
 import { v2 as cloudinary } from 'cloudinary';
+import { deleteFile } from './cleanupTemp.js';
 import fs from 'fs';
 
 cloudinary.config({
@@ -13,6 +14,7 @@ const uploadOnCloudinary = async (filePath) => {
     if (!filePath) return null;
 
     if (!fs.existsSync(filePath)) {
+      console.warn(`File not found for upload: ${filePath}`);
       return null;
     }
 
@@ -21,12 +23,13 @@ const uploadOnCloudinary = async (filePath) => {
       secure: true, // Ensure HTTPS URLs in response
     });
 
-    fs.unlinkSync(filePath);
+    // Always delete temp file after successful upload
+    deleteFile(filePath);
     return response;
   } catch (error) {
-    if (filePath && fs.existsSync(filePath)) {
-      fs.unlinkSync(filePath);
-    }
+    console.error('Cloudinary upload error:', error.message);
+    // Always try to clean up temp file even on error
+    deleteFile(filePath);
     return null;
   }
 };

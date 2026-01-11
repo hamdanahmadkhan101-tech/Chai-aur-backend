@@ -1,6 +1,7 @@
 import apiError from '../utils/apiError.js';
 import { ValidationError } from '../errors/index.js';
 import { logError } from '../utils/logger.js';
+import { deleteFile } from '../utils/cleanupTemp.js';
 
 /**
  * Global Error Handling Middleware
@@ -9,6 +10,28 @@ import { logError } from '../utils/logger.js';
 const errorMiddleware = (err, req, res, next) => {
   // Get request ID for error tracking
   const requestId = req.requestId || 'unknown';
+
+  // Clean up any uploaded temp files on error
+  if (req.files) {
+    // Handle array of files or multiple fields
+    if (Array.isArray(req.files)) {
+      req.files.forEach((file) => {
+        if (file?.path) deleteFile(file.path);
+      });
+    } else if (typeof req.files === 'object') {
+      // Handle fields object (e.g., { avatar: [...], coverImage: [...] })
+      Object.values(req.files).forEach((fileArray) => {
+        if (Array.isArray(fileArray)) {
+          fileArray.forEach((file) => {
+            if (file?.path) deleteFile(file.path);
+          });
+        }
+      });
+    }
+  } else if (req.file?.path) {
+    // Handle single file
+    deleteFile(req.file.path);
+  }
 
   // Handle known API errors
   if (err instanceof apiError) {
