@@ -317,6 +317,14 @@ export const Header: React.FC = () => {
                         </Link>
 
                         <Link
+                          to="/playlists"
+                          className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-surface-hover transition-colors text-text-primary"
+                        >
+                          <Video className="w-5 h-5" />
+                          My Playlists
+                        </Link>
+
+                        <Link
                           to="/settings"
                           className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-surface-hover transition-colors text-text-primary"
                         >

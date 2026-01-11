@@ -30,7 +30,6 @@ const envAllowed =
     .map((s) => s.trim())
     .filter(Boolean) || [];
 const allowedOrigins = [
-  'https://your-vercel-frontend-url.vercel.app',
   'https://vid-tube-kbfo.vercel.app',
   'http://localhost:5173',
   'http://localhost:5174',
@@ -73,8 +72,8 @@ app.use('/api/', apiLimiter);
 app.use(requestLogger);
 
 // Body parsing middleware
-app.use(express.urlencoded({ extended: true, limit: '16kb' }));
-app.use(express.json({ limit: '16kb' }));
+app.use(express.urlencoded({ extended: true, limit: '50mb' }));
+app.use(express.json({ limit: '50mb' }));
 app.use(express.static('public'));
 app.use(cookieParser());
 
