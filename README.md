@@ -16,6 +16,7 @@ A modern, full-stack video sharing platform built with React 19, Express 5, and 
 ## 📋 Tech Stack
 
 ### Frontend
+
 - **React 19** - Latest React with concurrent features
 - **Vite** - Next-generation build tool
 - **Tailwind CSS 4** - Utility-first CSS framework
@@ -26,6 +27,7 @@ A modern, full-stack video sharing platform built with React 19, Express 5, and 
 - **React Hot Toast** - Toast notifications
 
 ### Backend
+
 - **Node.js** - JavaScript runtime
 - **Express 5** - Web framework
 - **MongoDB** - NoSQL database
@@ -79,18 +81,21 @@ vidtube/
 ### Installation
 
 1. **Clone the repository**
+
    ```bash
    git clone <repository-url>
    cd Vidtube
    ```
 
 2. **Install backend dependencies**
+
    ```bash
    cd vidtube-backend
    npm install
    ```
 
 3. **Install frontend dependencies**
+
    ```bash
    cd ../vidtube-frontend
    npm install
@@ -99,6 +104,7 @@ vidtube/
 4. **Configure environment variables**
 
    Create `.env` in `vidtube-backend/`:
+
    ```env
    PORT=5000
    MONGODB_URI=mongodb://localhost:27017/vidtube
@@ -111,17 +117,20 @@ vidtube/
    ```
 
    Create `.env` in `vidtube-frontend/`:
+
    ```env
    VITE_API_URL=http://localhost:5000/api/v1
    ```
 
 5. **Start the backend**
+
    ```bash
    cd vidtube-backend
    npm run dev
    ```
 
 6. **Start the frontend** (in a new terminal)
+
    ```bash
    cd vidtube-frontend
    npm run dev
@@ -158,6 +167,7 @@ npm test
 ## 📦 Build for Production
 
 ### Backend
+
 ```bash
 cd vidtube-backend
 npm run build
@@ -165,6 +175,7 @@ npm start
 ```
 
 ### Frontend
+
 ```bash
 cd vidtube-frontend
 npm run build
@@ -174,11 +185,13 @@ npm run preview  # Preview production build
 ## 🛠️ Development
 
 ### Code Quality
+
 - ESLint for linting
 - Consistent code formatting
 - Type-safe validation with Zod
 
 ### Best Practices
+
 - Service layer pattern for business logic
 - Custom error classes for consistent error handling
 - Centralized state management with Zustand
@@ -195,15 +208,23 @@ See [CONTRIBUTING.md](./CONTRIBUTING.md) for contribution guidelines.
 
 ## 🙏 Acknowledgments
 
-- Built with modern web technologies
-- Following industry best practices
-- Production-ready architecture
+- Built with modern web technologies (React 19, Express 5, MongoDB)
+- Following industry best practices and OWASP security guidelines
+- Production-ready architecture with comprehensive testing
 
 ## 📝 Recent Updates
 
-See [COMPLETE_REFACTORING_SUMMARY.md](./COMPLETE_REFACTORING_SUMMARY.md) for recent refactoring details.
+See [CHANGELOG.md](./CHANGELOG.md) for detailed version history.
+
+### v1.1.0 Highlights
+
+- Real-time notification system with polling
+- Optimistic updates for like/subscribe actions
+- Enhanced comment sorting (top comments by engagement, newest by date)
+- Improved dashboard analytics with live subscriber counts
+- Fixed dropdown accessibility (close on outside click)
 
 ---
 
 **Status**: ✅ Production Ready
-**Version**: 1.0.0
+**Version**: 1.1.0

@@ -330,6 +330,7 @@ const getVideoComments = asyncHandler(async (req, res) => {
         as: 'commentLikes',
       },
     },
+    // First stage: compute basic fields
     {
       $addFields: {
         owner: { $first: '$owner' },
@@ -341,11 +342,15 @@ const getVideoComments = asyncHandler(async (req, res) => {
         isOwnComment: {
           $eq: ['$owner._id', req.user?._id],
         },
-        // Calculate engagement score for 'top' sorting
+      },
+    },
+    // Second stage: compute engagement score using computed likes
+    {
+      $addFields: {
         engagementScore: {
           $add: [
             { $multiply: ['$likes', 2] }, // Likes are worth 2 points
-            { $size: '$replies' }, // Replies are worth 1 point each
+            '$repliesCount', // Replies are worth 1 point each
           ],
         },
       },

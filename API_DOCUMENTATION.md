@@ -543,5 +543,5 @@ Response includes pagination metadata:
 
 ---
 
-**Last Updated**: 2024
-**API Version**: v1
+**Last Updated**: January 2025
+**API Version**: v1.1

@@ -12,6 +12,7 @@ import {
   Edit2,
 } from "lucide-react";
 import { videoService } from "../services/videoService.ts";
+import { authService } from "../services/authService.ts";
 import type { Video } from "../types";
 import { useAuthStore } from "../store/authStore.ts";
 import { formatViewCount, formatRelativeTime } from "../utils/helpers";
@@ -21,6 +22,14 @@ export const DashboardPage: React.FC = () => {
   const [timeRange, setTimeRange] = useState<"week" | "month" | "year">(
     "month"
   );
+
+  // Fetch current user profile with fresh subscriber count
+  const { data: currentUserProfile } = useQuery({
+    queryKey: ["currentUserProfile"],
+    queryFn: authService.getCurrentUser,
+    enabled: !!user?._id,
+    staleTime: 30000, // Refresh every 30 seconds
+  });
 
   // Fetch user's own videos
   const { data: videosData, isLoading } = useQuery({
@@ -48,6 +57,9 @@ export const DashboardPage: React.FC = () => {
   const totalVideos = videos.length;
   const totalViews = videos.reduce((sum: number, v: Video) => sum + v.views, 0);
   const totalLikes = videos.reduce((sum: number, v: Video) => sum + v.likes, 0);
+  // Use fresh subscriber count from profile query, fallback to auth store
+  const subscribersCount =
+    currentUserProfile?.subscribersCount ?? user?.subscribersCount ?? 0;
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -112,7 +124,7 @@ export const DashboardPage: React.FC = () => {
             </div>
             <p className="text-text-secondary text-sm mb-1">Subscribers</p>
             <p className="text-3xl font-bold text-text-primary">
-              {formatViewCount(user?.subscribersCount || 0)}
+              {formatViewCount(subscribersCount)}
             </p>
           </div>
         </div>

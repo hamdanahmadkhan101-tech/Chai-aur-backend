@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { motion } from "framer-motion";
@@ -36,6 +36,7 @@ export const VideoPlayerPage: React.FC = () => {
   const { user, isAuthenticated } = useAuthStore();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
+  const videoMenuRef = useRef<HTMLDivElement>(null);
 
   const [showFullDescription, setShowFullDescription] = useState(false);
   const [commentPage, setCommentPage] = useState(1);
@@ -43,6 +44,26 @@ export const VideoPlayerPage: React.FC = () => {
   const [showReportModal, setShowReportModal] = useState(false);
   const [showVideoMenu, setShowVideoMenu] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+
+  // Close video menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        videoMenuRef.current &&
+        !videoMenuRef.current.contains(event.target as Node)
+      ) {
+        setShowVideoMenu(false);
+      }
+    };
+
+    if (showVideoMenu) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [showVideoMenu]);
 
   // Fetch video data
   const {
@@ -428,7 +449,7 @@ export const VideoPlayerPage: React.FC = () => {
 
               {/* Video Owner Menu */}
               {isVideoOwner && (
-                <div className="relative">
+                <div className="relative" ref={videoMenuRef}>
                   <button
                     onClick={() => setShowVideoMenu(!showVideoMenu)}
                     className="glass-card hover:bg-surface-hover p-2 rounded-xl text-text-primary transition-all"

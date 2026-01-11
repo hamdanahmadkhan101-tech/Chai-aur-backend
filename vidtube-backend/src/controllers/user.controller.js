@@ -288,21 +288,56 @@ const changeCurrentUserPassword = asyncHandler(async (req, res) => {
 // ============================================
 
 /**
- * Get current user's profile information
+ * Get current user's profile information with subscriber count
  * @route GET /api/v1/users/profile
  * @access Private
  */
 const getCurrentUserProfile = asyncHandler(async (req, res) => {
-  const user = await User.findById(req.user._id).select(
-    '-password -refreshTokens'
-  );
-  if (!user) {
+  const userProfile = await User.aggregate([
+    {
+      $match: { _id: new mongoose.Types.ObjectId(req.user._id) },
+    },
+    {
+      $lookup: {
+        from: 'subscriptions',
+        localField: '_id',
+        foreignField: 'channel',
+        as: 'subscribers',
+      },
+    },
+    {
+      $lookup: {
+        from: 'subscriptions',
+        localField: '_id',
+        foreignField: 'subscriber',
+        as: 'subscribedTo',
+      },
+    },
+    {
+      $addFields: {
+        subscribersCount: { $size: '$subscribers' },
+        subscribedToCount: { $size: '$subscribedTo' },
+      },
+    },
+    {
+      $project: {
+        password: 0,
+        refreshTokens: 0,
+        subscribers: 0,
+        subscribedTo: 0,
+      },
+    },
+  ]);
+
+  if (!userProfile || userProfile.length === 0) {
     throw new apiError(404, 'User not found');
   }
 
   res
     .status(200)
-    .json(new apiResponse(200, 'User profile fetched successfully', user));
+    .json(
+      new apiResponse(200, 'User profile fetched successfully', userProfile[0])
+    );
 });
 
 /**
