@@ -21,6 +21,7 @@ const PlaylistPage = lazy(() => import("./pages/PlaylistPage"));
 const TrendingPage = lazy(() => import("./pages/TrendingPage"));
 const SubscriptionsPage = lazy(() => import("./pages/SubscriptionsPage"));
 const NotificationsPage = lazy(() => import("./pages/NotificationsPage"));
+const EditVideoPage = lazy(() => import("./pages/EditVideoPage"));
 
 // Create QueryClient with optimized config
 const queryClient = new QueryClient({
@@ -113,6 +114,14 @@ function App() {
                   element={
                     <ProtectedRoute>
                       <UploadPage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/edit/:videoId"
+                  element={
+                    <ProtectedRoute>
+                      <EditVideoPage />
                     </ProtectedRoute>
                   }
                 />

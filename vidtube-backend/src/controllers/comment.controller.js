@@ -239,6 +239,7 @@ const getVideoComments = asyncHandler(async (req, res) => {
   validateObjectId(videoId, 'videoId');
 
   const { page, limit } = getPaginationParams(req.query);
+  const { sortBy } = req.query; // 'top' or 'newest'
 
   // Ensure video exists and is published
   const video = await Video.findById(videoId).select('isPublished');
@@ -251,11 +252,6 @@ const getVideoComments = asyncHandler(async (req, res) => {
       $match: {
         video: new mongoose.Types.ObjectId(videoId),
         parent: null, // Only get top-level comments
-      },
-    },
-    {
-      $sort: {
-        createdAt: -1,
       },
     },
     {
@@ -342,7 +338,21 @@ const getVideoComments = asyncHandler(async (req, res) => {
         isLiked: {
           $in: [req.user?._id, '$commentLikes.likedBy'],
         },
+        // Calculate engagement score for 'top' sorting
+        engagementScore: {
+          $add: [
+            { $multiply: ['$likes', 2] }, // Likes are worth 2 points
+            { $size: '$replies' }, // Replies are worth 1 point each
+          ],
+        },
       },
+    },
+    // Sort based on sortBy parameter
+    {
+      $sort:
+        sortBy === 'top'
+          ? { engagementScore: -1, createdAt: -1 } // Top: by engagement, then by date
+          : { createdAt: -1 }, // Newest: by date only
     },
   ];
 

@@ -15,6 +15,8 @@ interface CommentSectionProps {
   isLoading: boolean;
   onLoadMore?: () => void;
   hasMore?: boolean;
+  sortBy: "top" | "newest";
+  onSortChange: (sort: "top" | "newest") => void;
   onAddComment: (content: string) => void;
   onLikeComment: (commentId: string) => void;
   onReplyComment: (commentId: string, content: string) => void;
@@ -30,6 +32,8 @@ export const CommentSection: React.FC<CommentSectionProps> = ({
   isLoading,
   onLoadMore,
   hasMore,
+  sortBy,
+  onSortChange,
   onAddComment,
   onLikeComment,
   onReplyComment,
@@ -38,7 +42,6 @@ export const CommentSection: React.FC<CommentSectionProps> = ({
 }) => {
   const { user, isAuthenticated } = useAuthStore();
   const [commentText, setCommentText] = useState("");
-  const [sortBy, setSortBy] = useState<"top" | "newest">("top");
 
   const handleSubmitComment = () => {
     if (commentText.trim()) {
@@ -46,20 +49,6 @@ export const CommentSection: React.FC<CommentSectionProps> = ({
       setCommentText("");
     }
   };
-
-  const sortedComments = React.useMemo(() => {
-    if (!comments || !Array.isArray(comments)) {
-      return [];
-    }
-    const sorted = [...comments];
-    if (sortBy === "top") {
-      return sorted.sort((a, b) => (b.likes || 0) - (a.likes || 0));
-    }
-    return sorted.sort(
-      (a, b) =>
-        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-    );
-  }, [comments, sortBy]);
 
   return (
     <div className="space-y-6">
@@ -73,7 +62,7 @@ export const CommentSection: React.FC<CommentSectionProps> = ({
         {/* Sort */}
         <div className="flex items-center gap-2">
           <button
-            onClick={() => setSortBy("top")}
+            onClick={() => onSortChange("top")}
             className={`px-4 py-2 rounded-lg text-sm font-medium transition-all cursor-pointer ${
               sortBy === "top"
                 ? "bg-primary-500 text-white shadow-glow"
@@ -83,7 +72,7 @@ export const CommentSection: React.FC<CommentSectionProps> = ({
             Top
           </button>
           <button
-            onClick={() => setSortBy("newest")}
+            onClick={() => onSortChange("newest")}
             className={`px-4 py-2 rounded-lg text-sm font-medium transition-all cursor-pointer ${
               sortBy === "newest"
                 ? "bg-primary-500 text-white shadow-glow"
@@ -152,9 +141,9 @@ export const CommentSection: React.FC<CommentSectionProps> = ({
               </div>
             </div>
           ))
-        ) : sortedComments.length > 0 ? (
+        ) : comments.length > 0 ? (
           <>
-            {sortedComments.map((comment) => (
+            {comments.map((comment) => (
               <Comment
                 key={comment._id}
                 comment={comment}

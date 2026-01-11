@@ -9,6 +9,7 @@ import {
   Clock,
   BarChart3,
   TrendingUp,
+  Edit2,
 } from "lucide-react";
 import { videoService } from "../services/videoService.ts";
 import type { Video } from "../types";
@@ -21,10 +22,26 @@ export const DashboardPage: React.FC = () => {
     "month"
   );
 
-  // Fetch user's videos (you'll need to add an endpoint for this)
+  // Fetch user's own videos
   const { data: videosData, isLoading } = useQuery({
-    queryKey: ["myVideos"],
-    queryFn: () => videoService.getVideos({ page: 1, limit: 50 }),
+    queryKey: ["myVideos", user?._id],
+    queryFn: async () => {
+      if (!user?._id) {
+        return {
+          docs: [],
+          pagination: {
+            page: 1,
+            limit: 50,
+            totalDocs: 0,
+            totalPages: 0,
+            hasNextPage: false,
+            hasPrevPage: false,
+          },
+        };
+      }
+      return await videoService.getUserVideos(user._id, 1, 50);
+    },
+    enabled: !!user?._id,
   });
 
   const videos = videosData?.docs || [];
@@ -126,24 +143,25 @@ export const DashboardPage: React.FC = () => {
           ) : videos.length > 0 ? (
             <div className="space-y-3">
               {videos.map((video: Video) => (
-                <Link
+                <div
                   key={video._id}
-                  to={`/watch/${video._id}`}
-                  className="flex items-center gap-4 p-4 rounded-xl hover:bg-surface transition-colors"
+                  className="flex items-center gap-4 p-4 rounded-xl hover:bg-surface transition-colors group"
                 >
-                  <img
-                    src={video.thumbnailUrl || "/default-thumbnail.jpg"}
-                    alt={video.title}
-                    className="w-32 h-20 object-cover rounded-lg"
-                  />
-                  <div className="flex-1 min-w-0">
+                  <Link to={`/watch/${video._id}`} className="flex-shrink-0">
+                    <img
+                      src={video.thumbnailUrl || "/default-thumbnail.jpg"}
+                      alt={video.title}
+                      className="w-32 h-20 object-cover rounded-lg"
+                    />
+                  </Link>
+                  <Link to={`/watch/${video._id}`} className="flex-1 min-w-0">
                     <h3 className="text-text-primary font-semibold line-clamp-1 mb-1">
                       {video.title}
                     </h3>
                     <p className="text-text-secondary text-sm">
                       {formatRelativeTime(video.createdAt)}
                     </p>
-                  </div>
+                  </Link>
                   <div className="flex items-center gap-6 text-sm text-text-secondary">
                     <div className="flex items-center gap-1">
                       <Eye className="w-4 h-4" />
@@ -154,7 +172,14 @@ export const DashboardPage: React.FC = () => {
                       {formatViewCount(video.likes)}
                     </div>
                   </div>
-                </Link>
+                  <Link
+                    to={`/edit/${video._id}`}
+                    className="btn-glass opacity-0 group-hover:opacity-100 transition-opacity"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <Edit2 className="w-4 h-4" />
+                  </Link>
+                </div>
               ))}
             </div>
           ) : (

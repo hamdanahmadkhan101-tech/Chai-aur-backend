@@ -31,6 +31,7 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
     queryKey: ["notifications"],
     queryFn: () => notificationService.getNotifications({ page: 1, limit: 10 }),
     enabled: isOpen,
+    refetchInterval: isOpen ? 10000 : false, // Poll every 10 seconds when dropdown is open
   });
 
   const markAsReadMutation = useMutation({

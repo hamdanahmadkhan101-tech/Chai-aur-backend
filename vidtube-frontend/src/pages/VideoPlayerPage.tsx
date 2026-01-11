@@ -39,6 +39,7 @@ export const VideoPlayerPage: React.FC = () => {
 
   const [showFullDescription, setShowFullDescription] = useState(false);
   const [commentPage, setCommentPage] = useState(1);
+  const [commentSortBy, setCommentSortBy] = useState<"top" | "newest">("top");
   const [showReportModal, setShowReportModal] = useState(false);
   const [showVideoMenu, setShowVideoMenu] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -71,8 +72,9 @@ export const VideoPlayerPage: React.FC = () => {
 
   // Fetch comments
   const { data: commentsData, isLoading: commentsLoading } = useQuery({
-    queryKey: ["comments", videoId, commentPage],
-    queryFn: () => commentService.getVideoComments(videoId!, commentPage, 20),
+    queryKey: ["comments", videoId, commentPage, commentSortBy],
+    queryFn: () =>
+      commentService.getVideoComments(videoId!, commentPage, 20, commentSortBy),
     enabled: !!videoId,
   });
 
@@ -261,6 +263,11 @@ export const VideoPlayerPage: React.FC = () => {
     mutationFn: () => videoService.deleteVideo(videoId!),
     onSuccess: () => {
       toast.success("Video deleted!");
+      // Invalidate all video-related queries
+      queryClient.invalidateQueries({ queryKey: ["videos"] });
+      queryClient.invalidateQueries({ queryKey: ["myVideos"] });
+      queryClient.invalidateQueries({ queryKey: ["userVideos"] });
+      queryClient.invalidateQueries({ queryKey: ["channelProfile"] });
       navigate("/");
     },
     onError: (error: any) => {
@@ -378,7 +385,7 @@ export const VideoPlayerPage: React.FC = () => {
                   {showVideoMenu && (
                     <div className="absolute right-0 top-full mt-2 glass-card p-2 min-w-48 z-10">
                       <Link
-                        to={`/studio/videos/${videoId}/edit`}
+                        to={`/edit/${videoId}`}
                         className="w-full flex items-center gap-2 px-3 py-2 text-sm text-text-primary hover:bg-surface-hover rounded-lg transition-colors"
                       >
                         <Edit2 className="w-4 h-4" />
@@ -585,6 +592,11 @@ export const VideoPlayerPage: React.FC = () => {
               totalComments={commentsData?.pagination.totalDocs || 0}
               isLoading={commentsLoading}
               hasMore={commentsData?.pagination.hasNextPage}
+              sortBy={commentSortBy}
+              onSortChange={(sort) => {
+                setCommentSortBy(sort);
+                setCommentPage(1); // Reset to page 1 when sorting changes
+              }}
               onLoadMore={() => setCommentPage((p) => p + 1)}
               onAddComment={(content) => addCommentMutation.mutate(content)}
               onLikeComment={(commentId) =>

@@ -57,12 +57,13 @@ export const Header: React.FC = () => {
     }
   }, [isAuthenticated]);
 
-  // Fetch unread notification count
+  // Fetch unread notification count with aggressive polling
   const { data: unreadCount } = useQuery({
     queryKey: ["unreadCount"],
     queryFn: notificationService.getUnreadCount,
     enabled: isAuthenticated,
-    refetchInterval: 30000, // Refetch every 30 seconds
+    refetchInterval: 15000, // Poll every 15 seconds for live updates
+    refetchIntervalInBackground: true, // Continue polling in background
   });
 
   const logoutMutation = useMutation({

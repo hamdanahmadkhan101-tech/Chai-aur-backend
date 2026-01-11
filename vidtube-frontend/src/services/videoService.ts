@@ -165,7 +165,24 @@ export const videoService = {
     return mapVideoResponse(response.data.data);
   },
 
-  // Update video
+  // Update video (with file upload support for thumbnail)
+  updateVideoWithFile: async (
+    videoId: string,
+    formData: FormData
+  ): Promise<Video> => {
+    const response = await apiClient.patch<ApiResponse<any>>(
+      `/videos/${videoId}`,
+      formData,
+      {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      }
+    );
+    return mapVideoResponse(response.data.data);
+  },
+
+  // Update video (for JSON data only)
   updateVideo: async (
     videoId: string,
     data: Partial<UploadVideoFormData>

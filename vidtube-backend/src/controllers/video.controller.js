@@ -5,9 +5,18 @@ import mongoose from 'mongoose';
 import asyncHandler from '../utils/asyncHandler.js';
 import apiError from '../utils/apiError.js';
 import apiResponse from '../utils/apiResponse.js';
-import { ValidationError, NotFoundError, ForbiddenError } from '../errors/index.js';
+import {
+  ValidationError,
+  NotFoundError,
+  ForbiddenError,
+} from '../errors/index.js';
 import { getPaginationParams, getSortParams } from '../utils/pagination.js';
-import { validateObjectId, validateRequired, validateNumericRange, validateStringLength } from '../utils/validation.js';
+import {
+  validateObjectId,
+  validateRequired,
+  validateNumericRange,
+  validateStringLength,
+} from '../utils/validation.js';
 import { formatVideo } from '../utils/formatters.js';
 
 // Models
@@ -63,15 +72,31 @@ const uploadVideo = asyncHandler(async (req, res) => {
   const { title, description = '', videoformat, duration } = req.body;
 
   // Validate required fields
-  validateRequired({ title, videoformat, duration }, ['title', 'videoformat', 'duration']);
+  validateRequired({ title, videoformat, duration }, [
+    'title',
+    'videoformat',
+    'duration',
+  ]);
 
   // Validate string fields
   const validatedTitle = validateStringLength(title, 1, 200, 'title');
-  const validatedDescription = description ? validateStringLength(description, 0, 5000, 'description') : '';
-  const validatedFormat = validateStringLength(videoformat, 1, 20, 'videoformat');
+  const validatedDescription = description
+    ? validateStringLength(description, 0, 5000, 'description')
+    : '';
+  const validatedFormat = validateStringLength(
+    videoformat,
+    1,
+    20,
+    'videoformat'
+  );
 
   // Validate duration
-  const numericDuration = validateNumericRange(duration, 0.01, 86400, 'duration'); // Max 24 hours
+  const numericDuration = validateNumericRange(
+    duration,
+    0.01,
+    86400,
+    'duration'
+  ); // Max 24 hours
 
   const videoPath = req.files?.video?.[0]?.path ?? null;
   const thumbnailPath = req.files?.thumbnail?.[0]?.path ?? null;
@@ -109,9 +134,15 @@ const uploadVideo = asyncHandler(async (req, res) => {
     ...ownerLookupPipeline,
   ]);
 
-  res.status(201).json(
-    new apiResponse(201, 'Video uploaded successfully', formatVideo(createdVideo || newVideo))
-  );
+  res
+    .status(201)
+    .json(
+      new apiResponse(
+        201,
+        'Video uploaded successfully',
+        formatVideo(createdVideo || newVideo)
+      )
+    );
 });
 
 /**
@@ -121,7 +152,7 @@ const uploadVideo = asyncHandler(async (req, res) => {
  */
 const getAllVideos = asyncHandler(async (req, res) => {
   const { page, limit } = getPaginationParams(req.query);
-  const allowedSortFields = ['createdAt', 'views', 'title'];
+  const allowedSortFields = ['createdAt', 'views', 'title', 'trending'];
   const { sortStage } = getSortParams(
     req.query.sortBy,
     req.query.sortType,
@@ -135,10 +166,51 @@ const getAllVideos = asyncHandler(async (req, res) => {
       },
     },
     ...ownerLookupPipeline,
-    {
-      $sort: sortStage,
-    },
   ];
+
+  // If sorting by trending, calculate engagement score
+  if (req.query.sortBy === 'trending' || req.query.sortBy === 'views') {
+    pipeline.push({
+      $addFields: {
+        // Calculate trending score: views * 0.5 + likes * 2 + comments * 3
+        // More recent videos get a boost
+        trendingScore: {
+          $add: [
+            { $multiply: ['$views', 0.5] },
+            { $multiply: ['$likes', 2] },
+            { $multiply: ['$commentsCount', 3] },
+            // Recency boost: videos from last 7 days get bonus points
+            {
+              $cond: {
+                if: {
+                  $gte: [
+                    '$createdAt',
+                    new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
+                  ],
+                },
+                then: 1000,
+                else: 0,
+              },
+            },
+          ],
+        },
+      },
+    });
+    // Sort by trending score when sortBy is 'views' or 'trending'
+    if (req.query.sortBy === 'views') {
+      pipeline.push({
+        $sort: { trendingScore: -1, createdAt: -1 },
+      });
+    } else {
+      pipeline.push({
+        $sort: sortStage,
+      });
+    }
+  } else {
+    pipeline.push({
+      $sort: sortStage,
+    });
+  }
 
   const aggregate = Video.aggregate(pipeline);
   const result = await Video.aggregatePaginate(aggregate, {
@@ -148,14 +220,10 @@ const getAllVideos = asyncHandler(async (req, res) => {
 
   // Format videos and use standardized paginated response
   const formattedVideos = (result.docs || []).map(formatVideo);
-  const response = apiResponse.paginated(
-    200,
-    'Videos fetched successfully',
-    {
-      ...result,
-      docs: formattedVideos,
-    }
-  );
+  const response = apiResponse.paginated(200, 'Videos fetched successfully', {
+    ...result,
+    docs: formattedVideos,
+  });
 
   res.status(200).json(response);
 });
@@ -180,7 +248,9 @@ const getVideoById = asyncHandler(async (req, res) => {
     video.owner.toString() === req.user._id.toString();
 
   if (!video.isPublished && !isOwner) {
-    throw new ForbiddenError('This video is not published and cannot be accessed');
+    throw new ForbiddenError(
+      'This video is not published and cannot be accessed'
+    );
   }
 
   const currentUserId = req.user?._id
@@ -244,9 +314,15 @@ const getVideoById = asyncHandler(async (req, res) => {
     throw new NotFoundError('Video', videoId);
   }
 
-  res.status(200).json(
-    new apiResponse(200, 'Video fetched successfully', formatVideo(detailedVideo))
-  );
+  res
+    .status(200)
+    .json(
+      new apiResponse(
+        200,
+        'Video fetched successfully',
+        formatVideo(detailedVideo)
+      )
+    );
 });
 
 // ============================================
@@ -309,9 +385,9 @@ const updateVideo = asyncHandler(async (req, res) => {
 
   // Only update if there are changes
   if (Object.keys(updatePayload).length === 0) {
-    return res.status(200).json(
-      new apiResponse(200, 'No changes detected', formatVideo(video))
-    );
+    return res
+      .status(200)
+      .json(new apiResponse(200, 'No changes detected', formatVideo(video)));
   }
 
   const updatedVideo = await Video.findByIdAndUpdate(
@@ -320,9 +396,15 @@ const updateVideo = asyncHandler(async (req, res) => {
     { new: true }
   );
 
-  res.status(200).json(
-    new apiResponse(200, 'Video updated successfully', formatVideo(updatedVideo))
-  );
+  res
+    .status(200)
+    .json(
+      new apiResponse(
+        200,
+        'Video updated successfully',
+        formatVideo(updatedVideo)
+      )
+    );
 });
 
 /**
@@ -374,9 +456,9 @@ const deleteVideo = asyncHandler(async (req, res) => {
   // Delete video document
   await Video.deleteOne({ _id: video._id });
 
-  res.status(200).json(
-    new apiResponse(200, 'Video deleted successfully', { videoId })
-  );
+  res
+    .status(200)
+    .json(new apiResponse(200, 'Video deleted successfully', { videoId }));
 });
 
 /**
@@ -419,7 +501,7 @@ const togglePublishStatus = asyncHandler(async (req, res) => {
  */
 const searchVideos = asyncHandler(async (req, res) => {
   const { query } = req.query;
-  
+
   if (!query || !query.trim()) {
     throw new ValidationError('Search query is required', [
       { field: 'query', message: 'Search query cannot be empty' },
@@ -452,14 +534,10 @@ const searchVideos = asyncHandler(async (req, res) => {
 
   // Format videos and use standardized paginated response
   const formattedVideos = (result.docs || []).map(formatVideo);
-  const response = apiResponse.paginated(
-    200,
-    'Videos searched successfully',
-    {
-      ...result,
-      docs: formattedVideos,
-    }
-  );
+  const response = apiResponse.paginated(200, 'Videos searched successfully', {
+    ...result,
+    docs: formattedVideos,
+  });
 
   res.status(200).json(response);
 });

@@ -21,6 +21,7 @@ import Report from '../models/report.model.js';
 import Video from '../models/video.model.js';
 import Comment from '../models/comment.model.js';
 import { User } from '../models/user.model.js';
+import Notification from '../models/notification.model.js';
 
 // ============================================
 // HELPER FUNCTIONS
@@ -164,6 +165,33 @@ const createReport = asyncHandler(async (req, res) => {
   });
 
   await report.populate('reportedBy', 'username fullName');
+
+  // Notify content owner about the report
+  try {
+    let ownerId;
+    if (type === 'video' && item.owner) {
+      ownerId = item.owner;
+    } else if (type === 'comment' && item.owner) {
+      ownerId = item.owner;
+    } else if (type === 'user' || type === 'channel') {
+      ownerId = item._id;
+    }
+
+    // Don't notify if user reports themselves
+    if (ownerId && ownerId.toString() !== req.user._id.toString()) {
+      const reasonText = reason.replace(/_/g, ' ');
+      await Notification.create({
+        recipient: ownerId,
+        type: 'system',
+        title: 'Content Reported',
+        message: `Your ${type} has been reported for ${reasonText}`,
+        relatedVideo: type === 'video' ? reportedItem : null,
+      });
+    }
+  } catch (notifError) {
+    // Log but don't fail the request if notification fails
+    console.error('Failed to create report notification:', notifError);
+  }
 
   const response = apiResponse(201, 'Report created successfully', report);
 

@@ -6,10 +6,11 @@ export const commentService = {
   getVideoComments: async (
     videoId: string,
     page = 1,
-    limit = 20
+    limit = 20,
+    sortBy: "top" | "newest" = "top"
   ): Promise<PaginatedResponse<Comment>> => {
     const response = await apiClient.get<ApiResponse<any>>(
-      `/comments/${videoId}?page=${page}&limit=${limit}`
+      `/comments/${videoId}?page=${page}&limit=${limit}&sortBy=${sortBy}`
     );
     // Backend returns aggregatePaginate result: { docs: [...], page, totalDocs, ... }
     const paginatedData = response.data.data || {};
