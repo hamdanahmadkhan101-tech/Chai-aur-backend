@@ -121,11 +121,12 @@ const addComment = asyncHandler(async (req, res) => {
           type: 'comment',
           title: 'New Comment',
           message: `${req.user.fullName} commented on your video`,
-        relatedVideo: videoId,
-        relatedUser: req.user._id,
-      });
-    } catch (notifError) {
-      console.error('Failed to create comment notification:', notifError);
+          relatedVideo: videoId,
+          relatedUser: req.user._id,
+        });
+      } catch (notifError) {
+        console.error('Failed to create comment notification:', notifError);
+      }
     }
   }
 
