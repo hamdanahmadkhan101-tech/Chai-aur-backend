@@ -88,8 +88,16 @@ export const PlaylistsPage: React.FC = () => {
               className="glass-card p-6 hover:shadow-glow transition-all"
             >
               <Link to={`/playlist/${playlist._id}`}>
-                <div className="aspect-video bg-gradient-to-br from-primary-500 to-accent-blue rounded-xl mb-4 flex items-center justify-center">
-                  <Play className="w-12 h-12 text-white" />
+                <div className="aspect-video bg-gradient-to-br from-primary-500 to-accent-blue rounded-xl mb-4 flex items-center justify-center overflow-hidden">
+                  {playlist.thumbnailUrl ? (
+                    <img
+                      src={playlist.thumbnailUrl}
+                      alt={playlist.name}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <Play className="w-12 h-12 text-white" />
+                  )}
                 </div>
               </Link>
 
@@ -105,12 +113,12 @@ export const PlaylistsPage: React.FC = () => {
 
               <div className="flex items-center justify-between text-sm text-text-tertiary mb-4">
                 <div className="flex items-center gap-2">
-                  {playlist.privacy === "private" ? (
+                  {playlist.isPublic === false ? (
                     <Lock className="w-4 h-4" />
                   ) : (
                     <Users className="w-4 h-4" />
                   )}
-                  <span className="capitalize">{playlist.privacy}</span>
+                  <span>{playlist.isPublic === false ? "Private" : "Public"}</span>
                 </div>
                 <span>{playlist.videos?.length || 0} videos</span>
               </div>

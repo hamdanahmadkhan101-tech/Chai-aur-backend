@@ -29,7 +29,7 @@ export const AddToPlaylistModal: React.FC<AddToPlaylistModalProps> = ({
     setIsMobile(window.innerWidth < 768);
   }, []);
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, refetch } = useQuery({
     queryKey: ["userPlaylists"],
     queryFn: () => playlistService.getUserPlaylists(),
     enabled: isOpen,
@@ -44,6 +44,7 @@ export const AddToPlaylistModal: React.FC<AddToPlaylistModalProps> = ({
       setShowCreateForm(false);
       setNewPlaylistName("");
       setNewPlaylistDescription("");
+      refetch();
       addToPlaylistMutation.mutate(newPlaylist._id);
     },
     onError: (error: any) => {
@@ -58,6 +59,7 @@ export const AddToPlaylistModal: React.FC<AddToPlaylistModalProps> = ({
       toast.success("Added to playlist!");
       queryClient.invalidateQueries({ queryKey: ["userPlaylists"] });
       queryClient.invalidateQueries({ queryKey: ["playlist"] });
+      refetch();
     },
     onError: (error: any) => {
       toast.error(error?.response?.data?.message || "Failed to add to playlist");
@@ -71,6 +73,7 @@ export const AddToPlaylistModal: React.FC<AddToPlaylistModalProps> = ({
       toast.success("Removed from playlist");
       queryClient.invalidateQueries({ queryKey: ["userPlaylists"] });
       queryClient.invalidateQueries({ queryKey: ["playlist"] });
+      refetch();
     },
     onError: (error: any) => {
       toast.error(error?.response?.data?.message || "Failed to remove from playlist");

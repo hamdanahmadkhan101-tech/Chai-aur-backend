@@ -58,6 +58,19 @@ const getPaginationParams = (query) => {
   return { page, limit, skip };
 };
 
+const updatePlaylistThumbnail = async (playlist) => {
+  if (!playlist.thumbnailUrl) {
+    for (const item of playlist.videos) {
+      const video = await Video.findById(item.video).select('thumbnailUrl');
+      if (video?.thumbnailUrl) {
+        playlist.thumbnailUrl = video.thumbnailUrl;
+        await playlist.save();
+        break;
+      }
+    }
+  }
+};
+
 // ============================================
 // PLAYLIST MANAGEMENT
 // ============================================
@@ -269,6 +282,10 @@ const addVideoToPlaylist = asyncHandler(async (req, res) => {
     video: videoId,
     order: playlist.videos.length,
   });
+
+  if (!playlist.thumbnailUrl && video.thumbnailUrl) {
+    playlist.thumbnailUrl = video.thumbnailUrl;
+  }
 
   await playlist.save();
   await playlist.populate({
