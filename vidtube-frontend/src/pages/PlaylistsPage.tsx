@@ -16,7 +16,7 @@ export const PlaylistsPage: React.FC = () => {
   const [newPlaylistPrivacy, setNewPlaylistPrivacy] = useState<"public" | "private">("public");
 
   const { data: playlists, isLoading } = useQuery({
-    queryKey: ["user-playlists"],
+    queryKey: ["userPlaylists"],
     queryFn: () => playlistService.getUserPlaylists(),
   });
 
@@ -24,6 +24,7 @@ export const PlaylistsPage: React.FC = () => {
     mutationFn: (data: { name: string; description?: string; privacy: "public" | "private" }) =>
       playlistService.createPlaylist(data),
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["userPlaylists"] });
       queryClient.invalidateQueries({ queryKey: ["user-playlists"] });
       setShowCreateModal(false);
       setNewPlaylistName("");
@@ -38,6 +39,7 @@ export const PlaylistsPage: React.FC = () => {
   const deleteMutation = useMutation({
     mutationFn: (playlistId: string) => playlistService.deletePlaylist(playlistId),
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["userPlaylists"] });
       queryClient.invalidateQueries({ queryKey: ["user-playlists"] });
       toast.success("Playlist deleted successfully!");
     },
