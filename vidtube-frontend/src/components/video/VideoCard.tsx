@@ -177,7 +177,7 @@ const VideoCardComponent: React.FC<VideoCardProps> = ({
 
               {/* Dropdown Menu */}
               {showMenu && (
-                <div className="absolute right-0 top-8 z-50 w-48 glass-card rounded-lg shadow-xl py-2">
+                <div className="absolute right-0 top-8 z-50 w-56 glass-card rounded-lg shadow-xl py-2">
                   <button
                     onClick={(e) => {
                       e.preventDefault();

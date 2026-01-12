@@ -14,6 +14,13 @@ import { verifyJWT } from '../middlewares/auth.middleware.js';
 const router = Router();
 
 // ============================================
+// PROTECTED ROUTES (must come before /:playlistId)
+// ============================================
+
+router.route('/').post(verifyJWT, createPlaylist);
+router.route('/user').get(verifyJWT, getCurrentUserPlaylists);
+
+// ============================================
 // PUBLIC ROUTES
 // ============================================
 
@@ -21,11 +28,8 @@ router.route('/user/:userId').get(getUserPlaylists);
 router.route('/:playlistId').get(getPlaylistById);
 
 // ============================================
-// PROTECTED ROUTES
+// PROTECTED ROUTES (specific operations)
 // ============================================
-
-router.route('/').post(verifyJWT, createPlaylist);
-router.route('/user').get(verifyJWT, getCurrentUserPlaylists);
 
 router
   .route('/:playlistId')
