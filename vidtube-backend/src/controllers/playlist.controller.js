@@ -122,7 +122,7 @@ const getCurrentUserPlaylists = asyncHandler(async (req, res) => {
     })
     .populate({
       path: 'videos.video',
-      select: 'title thumbnailUrl duration',
+      select: 'title thumbnailUrl duration _id',
     })
     .sort({ createdAt: -1 });
 
@@ -193,10 +193,15 @@ const getPlaylistById = asyncHandler(async (req, res) => {
   const { playlistId } = req.params;
   validateObjectId(playlistId, 'playlistId');
 
-  const playlist = await Playlist.findById(playlistId).populate({
-    path: 'owner',
-    select: 'username fullName avatarUrl',
-  });
+  const playlist = await Playlist.findById(playlistId)
+    .populate({
+      path: 'owner',
+      select: 'username fullName avatarUrl',
+    })
+    .populate({
+      path: 'videos.video',
+      select: 'title thumbnailUrl duration _id videoUrl owner',
+    });
 
   if (!playlist) {
     throw new NotFoundError('Playlist not found');
@@ -327,7 +332,7 @@ const addVideoToPlaylist = asyncHandler(async (req, res) => {
   await playlist.save();
   await playlist.populate({
     path: 'videos.video',
-    select: 'title thumbnailUrl duration',
+    select: 'title thumbnailUrl duration _id',
   });
 
   const response = apiResponse(

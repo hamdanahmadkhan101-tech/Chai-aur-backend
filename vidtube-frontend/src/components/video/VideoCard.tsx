@@ -163,7 +163,7 @@ const VideoCardComponent: React.FC<VideoCardProps> = ({
             </div>
 
             {/* More Menu */}
-            <div className="relative" ref={menuRef}>
+            <div className="relative overflow-visible" ref={menuRef}>
               <button
                 onClick={(e) => {
                   e.preventDefault();

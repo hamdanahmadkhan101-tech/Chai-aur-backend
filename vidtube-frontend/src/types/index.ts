@@ -101,13 +101,21 @@ export interface Like {
 }
 
 // Playlist Types
+export interface PlaylistVideo {
+  video: Video | string;
+  addedAt?: string;
+  order?: number;
+  _id?: string;
+}
+
 export interface Playlist {
   _id: string;
   name: string;
   description?: string;
   owner: User;
-  videos: Video[];
-  privacy: "public" | "unlisted" | "private";
+  videos: PlaylistVideo[];
+  isPublic?: boolean;
+  privacy?: "public" | "unlisted" | "private";
   createdAt: string;
   updatedAt: string;
 }

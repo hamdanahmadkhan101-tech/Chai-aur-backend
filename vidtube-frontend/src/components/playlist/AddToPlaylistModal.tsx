@@ -133,7 +133,7 @@ export const AddToPlaylistModal: React.FC<AddToPlaylistModalProps> = ({
                   <div className="space-y-2">
                     {playlists.map((playlist: Playlist) => {
                       const isInPlaylist = playlist.videos.some(
-                        (v: any) => v._id === videoId
+                        (v: any) => v.video?._id === videoId || v.video === videoId
                       );
 
                       return (
