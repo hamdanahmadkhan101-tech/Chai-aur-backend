@@ -34,7 +34,6 @@ export const Header: React.FC = () => {
   const searchRef = useRef<HTMLDivElement>(null);
   const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Close profile dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (
@@ -43,7 +42,6 @@ export const Header: React.FC = () => {
       ) {
         setShowUserMenu(false);
       }
-      // Close search suggestions when clicking outside
       if (
         searchRef.current &&
         !searchRef.current.contains(event.target as Node)
@@ -61,7 +59,6 @@ export const Header: React.FC = () => {
     };
   }, [showUserMenu, showSuggestions]);
 
-  // Close dropdowns when user logs out
   useEffect(() => {
     if (!isAuthenticated) {
       setShowUserMenu(false);
@@ -69,7 +66,6 @@ export const Header: React.FC = () => {
     }
   }, [isAuthenticated]);
 
-  // Fetch search suggestions with debouncing
   const fetchSuggestions = useCallback(async (query: string) => {
     if (!query.trim()) {
       setSuggestions([]);
@@ -85,22 +81,18 @@ export const Header: React.FC = () => {
     }
   }, []);
 
-  // Debounced search input handler
   const handleSearchInput = (value: string) => {
     setSearchQuery(value);
 
-    // Clear previous timer
     if (debounceTimerRef.current) {
       clearTimeout(debounceTimerRef.current);
     }
 
-    // Set new timer for debouncing (300ms delay)
     debounceTimerRef.current = setTimeout(() => {
       fetchSuggestions(value);
     }, 300);
   };
 
-  // Cleanup timer on unmount
   useEffect(() => {
     return () => {
       if (debounceTimerRef.current) {
@@ -109,16 +101,14 @@ export const Header: React.FC = () => {
     };
   }, []);
 
-  // Fetch unread notification count with aggressive polling
   const { data: unreadCount, refetch: refetchNotifications } = useQuery({
     queryKey: ["unreadCount"],
     queryFn: notificationService.getUnreadCount,
     enabled: isAuthenticated,
-    refetchInterval: 10000, // Poll every 10 seconds for live updates
-    refetchIntervalInBackground: true, // Continue polling in background
+    refetchInterval: 10000,
+    refetchIntervalInBackground: true,
   });
 
-  // Refetch notifications when navigating (on route change)
   useEffect(() => {
     if (isAuthenticated) {
       refetchNotifications();
@@ -133,7 +123,6 @@ export const Header: React.FC = () => {
       navigate("/");
     },
     onError: (error) => {
-      // If logout fails (401), still clear local auth state
       logout();
       toast.error("Logged out (session expired)");
       navigate("/");
@@ -141,7 +130,6 @@ export const Header: React.FC = () => {
   });
 
   const handleLogout = () => {
-    // Prevent multiple clicks
     if (logoutMutation.isPending) return;
 
     setShowUserMenu(false);
@@ -208,7 +196,6 @@ export const Header: React.FC = () => {
               </div>
             </form>
 
-            {/* Search Suggestions Dropdown */}
             <AnimatePresence>
               {showSuggestions && suggestions.length > 0 && (
                 <motion.div
@@ -350,11 +337,11 @@ export const Header: React.FC = () => {
                 </div>
               </>
             ) : (
-              <div className="flex items-center gap-2">
-                <Link to="/login" className="btn-ghost hidden sm:block">
+              <div className="flex items-center gap-1 sm:gap-2">
+                <Link to="/login" className="btn-ghost hidden sm:block text-sm sm:text-base">
                   Sign In
                 </Link>
-                <Link to="/register" className="btn-primary">
+                <Link to="/register" className="btn-primary text-xs sm:text-sm px-2 sm:px-4 py-1.5 sm:py-2">
                   Sign Up
                 </Link>
               </div>
