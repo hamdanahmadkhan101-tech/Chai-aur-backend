@@ -12,7 +12,7 @@ export const HomePage: React.FC = () => {
       queryFn: ({ pageParam = 1 }) =>
         videoService.getVideos({
           page: pageParam,
-          limit: 12, // Reduced from 20 for better mobile performance
+          limit: 12,
           sortBy: "views",
           sortType: "desc",
         }),
@@ -21,10 +21,9 @@ export const HomePage: React.FC = () => {
           ? lastPage.pagination.page + 1
           : undefined,
       initialPageParam: 1,
-      staleTime: 5 * 60 * 1000, // Cache for 5 minutes
+      staleTime: 5 * 60 * 1000,
     });
 
-  // Infinite scroll observer
   const observerRef = React.useRef<IntersectionObserver | null>(null);
   const lastVideoRef = React.useCallback(
     (node: HTMLDivElement) => {
@@ -46,7 +45,6 @@ export const HomePage: React.FC = () => {
 
   return (
     <div className="container mx-auto px-2 sm:px-4 py-3 sm:py-6">
-      {/* Hero Section - Simplified for mobile */}
       <div className="mb-4 sm:mb-8">
         <h1 className="text-2xl sm:text-4xl md:text-5xl font-bold text-gradient mb-2">
           Trending Now
@@ -56,7 +54,6 @@ export const HomePage: React.FC = () => {
         </p>
       </div>
 
-      {/* Video Grid - Bento Box Layout */}
       {isLoading ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-6">
           {Array.from({ length: 12 }).map((_, i) => (
@@ -65,32 +62,30 @@ export const HomePage: React.FC = () => {
         </div>
       ) : (
         <>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-6 overflow-visible">
             {videos.map((video, index) => (
               <div
                 key={video._id}
                 ref={index === videos.length - 1 ? lastVideoRef : null}
+                className="overflow-visible"
               >
                 <VideoCard video={video} />
               </div>
             ))}
           </div>
 
-          {/* Loading More Indicator */}
           {isFetchingNextPage && (
             <div className="flex justify-center items-center py-12">
               <Loader2 className="w-8 h-8 text-primary-500 animate-spin" />
             </div>
           )}
 
-          {/* End of List */}
           {!hasNextPage && videos.length > 0 && (
             <div className="text-center py-12">
               <p className="text-text-secondary">You've reached the end!</p>
             </div>
           )}
 
-          {/* Empty State */}
           {videos.length === 0 && !isLoading && (
             <div className="glass-card p-12 text-center">
               <p className="text-text-secondary text-lg">No videos found</p>

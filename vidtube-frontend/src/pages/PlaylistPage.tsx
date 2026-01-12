@@ -6,6 +6,7 @@ import { Play, Lock, Users, Calendar, Loader2 } from "lucide-react";
 import { playlistService } from "../services/playlistService.ts";
 import { VideoCard } from "../components/video/VideoCard";
 import { formatRelativeTime } from "../utils/helpers";
+import type { Video } from "../types";
 
 export const PlaylistPage: React.FC = () => {
   const { playlistId } = useParams<{ playlistId: string }>();
@@ -38,6 +39,14 @@ export const PlaylistPage: React.FC = () => {
       </div>
     );
   }
+
+  // Extract video objects from playlist items
+  const videos: Video[] = playlist.videos
+    .map((item: any) => {
+      const video = typeof item.video === 'object' ? item.video : null;
+      return video;
+    })
+    .filter((v: any) => v !== null);
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -76,7 +85,7 @@ export const PlaylistPage: React.FC = () => {
             <div className="space-y-2 text-sm text-text-secondary">
               <div className="flex items-center gap-2">
                 <Play className="w-4 h-4" />
-                <span>{playlist.videos.length} videos</span>
+                <span>{videos.length} videos</span>
               </div>
               <div className="flex items-center gap-2">
                 {playlist.isPublic === false ? (
@@ -98,14 +107,13 @@ export const PlaylistPage: React.FC = () => {
         <div className="lg:col-span-2">
           <h2 className="text-2xl font-bold text-text-primary mb-6">Videos</h2>
 
-          {playlist.videos.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {playlist.videos.map((item) => {
-                const video = typeof item.video === 'string' ? null : item.video;
-                return video ? (
-                  <VideoCard key={video._id} video={video} />
-                ) : null;
-              })}
+          {videos.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 overflow-visible">
+              {videos.map((video) => (
+                <div key={video._id} className="overflow-visible">
+                  <VideoCard video={video} />
+                </div>
+              ))}
             </div>
           ) : (
             <div className="glass-card p-12 text-center">

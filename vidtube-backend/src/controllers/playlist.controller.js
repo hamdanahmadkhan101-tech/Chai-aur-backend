@@ -200,7 +200,11 @@ const getPlaylistById = asyncHandler(async (req, res) => {
     })
     .populate({
       path: 'videos.video',
-      select: 'title thumbnailUrl duration _id videoUrl owner',
+      select: 'title thumbnailUrl duration _id videoUrl url owner views likes isPublished privacy',
+      populate: {
+        path: 'owner',
+        select: 'username fullName avatarUrl',
+      },
     });
 
   if (!playlist) {
@@ -308,10 +312,10 @@ const addVideoToPlaylist = asyncHandler(async (req, res) => {
     throw new ForbiddenError('You can only modify your own playlists');
   }
 
-  // Check if video exists and is published
+  // Check if video exists
   const video = await Video.findById(videoId);
-  if (!video || !video.isPublished) {
-    throw new NotFoundError('Video not found or not published');
+  if (!video) {
+    throw new NotFoundError('Video not found');
   }
 
   // Check if video already in playlist
