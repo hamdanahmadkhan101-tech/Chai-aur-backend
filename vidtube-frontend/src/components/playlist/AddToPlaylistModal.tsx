@@ -25,7 +25,6 @@ export const AddToPlaylistModal: React.FC<AddToPlaylistModalProps> = ({
   const [newPlaylistDescription, setNewPlaylistDescription] = useState("");
   const [isMobile, setIsMobile] = useState(false);
 
-  // Detect mobile
   React.useEffect(() => {
     setIsMobile(window.innerWidth < 768);
   }, []);
@@ -45,11 +44,10 @@ export const AddToPlaylistModal: React.FC<AddToPlaylistModalProps> = ({
       setShowCreateForm(false);
       setNewPlaylistName("");
       setNewPlaylistDescription("");
-      // Auto-add video to new playlist
       addToPlaylistMutation.mutate(newPlaylist._id);
     },
-    onError: () => {
-      toast.error("Failed to create playlist");
+    onError: (error: any) => {
+      toast.error(error?.response?.data?.message || "Failed to create playlist");
     },
   });
 
@@ -59,9 +57,10 @@ export const AddToPlaylistModal: React.FC<AddToPlaylistModalProps> = ({
     onSuccess: () => {
       toast.success("Added to playlist!");
       queryClient.invalidateQueries({ queryKey: ["userPlaylists"] });
+      queryClient.invalidateQueries({ queryKey: ["playlist"] });
     },
-    onError: () => {
-      toast.error("Failed to add to playlist");
+    onError: (error: any) => {
+      toast.error(error?.response?.data?.message || "Failed to add to playlist");
     },
   });
 
@@ -71,12 +70,15 @@ export const AddToPlaylistModal: React.FC<AddToPlaylistModalProps> = ({
     onSuccess: () => {
       toast.success("Removed from playlist");
       queryClient.invalidateQueries({ queryKey: ["userPlaylists"] });
+      queryClient.invalidateQueries({ queryKey: ["playlist"] });
+    },
+    onError: (error: any) => {
+      toast.error(error?.response?.data?.message || "Failed to remove from playlist");
     },
   });
 
   const playlists = data || [];
 
-  // Simplified modal for mobile
   const ModalWrapper = isMobile ? 'div' : motion.div;
   const modalProps = isMobile
     ? { className: "fixed inset-0 z-50 flex items-center justify-center p-4" }
@@ -91,7 +93,6 @@ export const AddToPlaylistModal: React.FC<AddToPlaylistModalProps> = ({
     <AnimatePresence>
       {isOpen && (
         <>
-          {/* Backdrop */}
           {isMobile ? (
             <div
               onClick={onClose}
@@ -107,10 +108,8 @@ export const AddToPlaylistModal: React.FC<AddToPlaylistModalProps> = ({
             />
           )}
 
-          {/* Modal */}
           <ModalWrapper {...modalProps}>
             <div className="glass-card w-full max-w-md max-h-[80vh] flex flex-col">
-              {/* Header */}
               <div className="flex items-center justify-between p-6 border-b border-white/10">
                 <h2 className="text-xl font-bold text-text-primary">
                   Save to playlist
@@ -123,7 +122,6 @@ export const AddToPlaylistModal: React.FC<AddToPlaylistModalProps> = ({
                 </button>
               </div>
 
-              {/* Content */}
               <div className="flex-1 overflow-y-auto p-6">
                 {isLoading ? (
                   <div className="flex items-center justify-center py-8">
@@ -179,7 +177,6 @@ export const AddToPlaylistModal: React.FC<AddToPlaylistModalProps> = ({
                   </div>
                 )}
 
-                {/* Create New Playlist */}
                 {showCreateForm ? (
                   <div className="mt-4 p-4 glass-card rounded-xl">
                     <input
