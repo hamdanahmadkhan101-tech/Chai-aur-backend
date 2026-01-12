@@ -222,7 +222,6 @@ const VideoCardComponent: React.FC<VideoCardProps> = ({
     </CardWrapper>
   );
 };
-};
 
 // Memoize the component to prevent unnecessary re-renders
 export const VideoCard = React.memo(VideoCardComponent);
