@@ -58,7 +58,7 @@ export const PlaylistPage: React.FC = () => {
               className="flex items-center gap-2 mb-4 hover:text-primary-500 transition-colors"
             >
               <img
-                src={playlist.owner.avatar || "/default-avatar.jpg"}
+                src={playlist.owner.avatarUrl || "/default-avatar.jpg"}
                 alt={playlist.owner.fullName}
                 className="w-8 h-8 rounded-full"
               />
@@ -79,12 +79,12 @@ export const PlaylistPage: React.FC = () => {
                 <span>{playlist.videos.length} videos</span>
               </div>
               <div className="flex items-center gap-2">
-                {playlist.privacy === "private" ? (
+                {playlist.isPublic === false ? (
                   <Lock className="w-4 h-4" />
                 ) : (
                   <Users className="w-4 h-4" />
                 )}
-                <span className="capitalize">{playlist.privacy}</span>
+                <span>{playlist.isPublic === false ? "Private" : "Public"}</span>
               </div>
               <div className="flex items-center gap-2">
                 <Calendar className="w-4 h-4" />
@@ -100,9 +100,12 @@ export const PlaylistPage: React.FC = () => {
 
           {playlist.videos.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {playlist.videos.map((video) => (
-                <VideoCard key={video._id} video={video} />
-              ))}
+              {playlist.videos.map((item) => {
+                const video = typeof item.video === 'string' ? null : item.video;
+                return video ? (
+                  <VideoCard key={video._id} video={video} />
+                ) : null;
+              })}
             </div>
           ) : (
             <div className="glass-card p-12 text-center">
